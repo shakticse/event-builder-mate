@@ -20,6 +20,8 @@ import {
 } from "@/lib/bom-types";
 import { exportBomToXlsx } from "@/lib/bom-export";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api-client";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
