@@ -43,7 +43,7 @@ export const Route = createFileRoute("/")({
   component: BomBuilderPage,
 });
 
-const API_URL = "https://projecthub.runasp.net/api/items/bomitems";
+const API_URL = "/api/items/bomitems";
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
