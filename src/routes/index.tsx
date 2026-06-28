@@ -20,6 +20,8 @@ import {
 } from "@/lib/bom-types";
 import { exportBomToXlsx } from "@/lib/bom-export";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api-client";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,7 +43,7 @@ export const Route = createFileRoute("/")({
   component: BomBuilderPage,
 });
 
-const API_URL = "https://projecthub.runasp.net/api/items/bomitems";
+const API_URL = "/api/items/bomitems";
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -70,7 +72,7 @@ function BomBuilderPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_URL, { headers: { Accept: "application/json" } });
+      const res = await apiFetch(API_URL);
       if (!res.ok) {
         throw new Error(
           res.status === 401
