@@ -72,7 +72,7 @@ function BomBuilderPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_URL, { headers: { Accept: "application/json" } });
+      const res = await apiFetch(API_URL);
       if (!res.ok) {
         throw new Error(
           res.status === 401
