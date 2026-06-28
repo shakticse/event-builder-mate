@@ -411,6 +411,14 @@ function BomBuilderPage() {
                       <span className="ml-auto text-[10px] text-muted-foreground">
                         {groupRows.length} sub-items
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => removeRow(first)}
+                        aria-label={`Delete group ${first.groupName}`}
+                        className="flex h-7 w-7 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 active:bg-destructive/20"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   )}
                   <ul className="divide-y divide-border">
