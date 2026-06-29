@@ -134,7 +134,7 @@ function BomBuilderPage() {
             standalone: false,
           };
         });
-        setRows((prev) => [...prev, ...newRows]);
+        setRows((prev) => [...newRows, ...prev]);
         toast.success(
           `Added ${newRows.length} items from "${selected.name}"`,
         );
