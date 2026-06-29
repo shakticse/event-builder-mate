@@ -144,11 +144,11 @@ function BomBuilderPage() {
           (r) => r.standalone && r.itemId === selected.id,
         );
         if (existingIdx >= 0) {
-          setRows((prev) =>
-            prev.map((r, i) =>
-              i === existingIdx ? { ...r, quantity: r.quantity + qty } : r,
-            ),
-          );
+          setRows((prev) => {
+            const existing = prev[existingIdx];
+            const updated = { ...existing, quantity: existing.quantity + qty };
+            return [updated, ...prev.filter((_, i) => i !== existingIdx)];
+          });
           toast.message(`Incremented "${selected.name}" by ${qty}`);
         } else {
           setRows((prev) => [
