@@ -152,7 +152,6 @@ function BomBuilderPage() {
           toast.message(`Incremented "${selected.name}" by ${qty}`);
         } else {
           setRows((prev) => [
-            ...prev,
             {
               rowId: uid(),
               itemId: selected.id,
@@ -161,6 +160,7 @@ function BomBuilderPage() {
               price: selected.itemPrice,
               standalone: true,
             },
+            ...prev,
           ]);
           toast.success(`Added "${selected.name}"`);
         }
