@@ -134,7 +134,7 @@ function BomBuilderPage() {
             standalone: false,
           };
         });
-        setRows((prev) => [...prev, ...newRows]);
+        setRows((prev) => [...newRows, ...prev]);
         toast.success(
           `Added ${newRows.length} items from "${selected.name}"`,
         );
@@ -144,15 +144,14 @@ function BomBuilderPage() {
           (r) => r.standalone && r.itemId === selected.id,
         );
         if (existingIdx >= 0) {
-          setRows((prev) =>
-            prev.map((r, i) =>
-              i === existingIdx ? { ...r, quantity: r.quantity + qty } : r,
-            ),
-          );
+          setRows((prev) => {
+            const existing = prev[existingIdx];
+            const updated = { ...existing, quantity: existing.quantity + qty };
+            return [updated, ...prev.filter((_, i) => i !== existingIdx)];
+          });
           toast.message(`Incremented "${selected.name}" by ${qty}`);
         } else {
           setRows((prev) => [
-            ...prev,
             {
               rowId: uid(),
               itemId: selected.id,
@@ -161,6 +160,7 @@ function BomBuilderPage() {
               price: selected.itemPrice,
               standalone: true,
             },
+            ...prev,
           ]);
           toast.success(`Added "${selected.name}"`);
         }
