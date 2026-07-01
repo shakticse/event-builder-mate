@@ -8,7 +8,7 @@ import type { BomRow } from "./bom-types";
 export function consolidateForExport(rows: BomRow[]) {
   const map = new Map<
     string,
-    { name: string; quantity: number; price: number | null }
+    { name: string; quantity: number; price: number | null; categoryName?: string }
   >();
   for (const r of rows) {
     const key = r.name.trim().toLowerCase();
@@ -18,7 +18,7 @@ export function consolidateForExport(rows: BomRow[]) {
       // Keep first non-null price encountered
       if (existing.price === null && r.price !== null) existing.price = r.price;
     } else {
-      map.set(key, { name: r.name, quantity: r.quantity, price: r.price });
+      map.set(key, { name: r.name, quantity: r.quantity, price: r.price, categoryName: r.categoryName });
     }
   }
   return Array.from(map.values());
@@ -26,12 +26,12 @@ export function consolidateForExport(rows: BomRow[]) {
 
 export function exportBomToXlsx(rows: BomRow[], eventName: string) {
   const consolidated = consolidateForExport(rows);
-  const aoa: (string | number)[][] = [["Item Name", "Quantity", "Item Price"]];
+  const aoa: (string | number)[][] = [["Category Name", "Item Name", "Quantity", "Item Price"]];
   for (const r of consolidated) {
-    aoa.push([r.name, r.quantity, r.price === null ? "N/A" : r.price]);
+    aoa.push([r.categoryName ?? "", r.name, r.quantity, r.price === null ? "N/A" : r.price]);
   }
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = [{ wch: 38 }, { wch: 12 }, { wch: 14 }];
+  ws["!cols"] = [{ wch: 24 }, { wch: 38 }, { wch: 12 }, { wch: 14 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "BOM");
 
@@ -46,3 +46,4 @@ export function exportBomToXlsx(rows: BomRow[], eventName: string) {
   XLSX.writeFile(wb, filename);
   return filename;
 }
+

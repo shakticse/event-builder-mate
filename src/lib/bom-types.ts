@@ -4,16 +4,19 @@ export interface ChildItem {
   perunit: number;
   expression: string;
   price: number | null;
+  categoryName?: string;
 }
 
 export interface BomApiItem {
   id: number;
   name: string;
+  categoryName?: string;
   isGroupedItem: boolean;
   itemPrice: number | null;
   availableStock?: number;
   childItems?: ChildItem[];
 }
+
 
 export interface BomRow {
   /** stable row id (uuid) */
@@ -33,9 +36,12 @@ export interface BomRow {
   expression?: string;
   /** perunit_qty for the child */
   perunit?: number;
+  /** category name from the API, used only in export */
+  categoryName?: string;
   /** true if this row is itself a standalone (non-grouped) item */
   standalone: boolean;
 }
+
 
 /**
  * Safely evaluate the small arithmetic expression strings returned by the API,

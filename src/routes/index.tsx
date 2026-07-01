@@ -135,6 +135,7 @@ function BomBuilderPage() {
             groupQty: qty,
             expression: c.expression,
             perunit: c.perunit,
+            categoryName: c.categoryName ?? selected.categoryName,
             standalone: false,
           };
         });
@@ -162,6 +163,7 @@ function BomBuilderPage() {
               name: selected.name,
               quantity: qty,
               price: selected.itemPrice,
+              categoryName: selected.categoryName,
               standalone: true,
             },
             ...prev,
