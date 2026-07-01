@@ -560,9 +560,10 @@ function BomRowItem({
                 setVal(String(row.quantity));
                 setEditing(true);
               }}
-              className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm hover:border-primary/40 hover:bg-accent/10 active:bg-accent/20"
             >
-              Qty: {row.quantity}
+              <span className="text-muted-foreground">Qty:</span>
+              {row.quantity}
             </button>
           )}
           <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
