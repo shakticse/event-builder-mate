@@ -131,6 +131,9 @@ function BomBuilderPage() {
             price: c.price,
             groupInstanceId,
             groupName: selected.name,
+            groupQty: qty,
+            expression: c.expression,
+            perunit: c.perunit,
             standalone: false,
           };
         });
