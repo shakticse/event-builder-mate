@@ -163,6 +163,7 @@ function BomBuilderPage() {
               name: selected.name,
               quantity: qty,
               price: selected.itemPrice,
+              categoryName: selected.categoryName,
               standalone: true,
             },
             ...prev,
