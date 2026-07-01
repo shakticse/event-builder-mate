@@ -12,6 +12,7 @@ import {
   RefreshCw,
   AlertCircle,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import {
   evalExpression,
