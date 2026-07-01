@@ -131,6 +131,9 @@ function BomBuilderPage() {
             price: c.price,
             groupInstanceId,
             groupName: selected.name,
+            groupQty: qty,
+            expression: c.expression,
+            perunit: c.perunit,
             standalone: false,
           };
         });
@@ -178,6 +181,24 @@ function BomBuilderPage() {
     if (!Number.isFinite(next) || next <= 0) return;
     setRows((prev) =>
       prev.map((r) => (r.rowId === rowId ? { ...r, quantity: next } : r)),
+    );
+  };
+
+  const updateGroupQty = (groupInstanceId: string, nextQty: number) => {
+    if (!Number.isFinite(nextQty) || nextQty <= 0) return;
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.groupInstanceId !== groupInstanceId) return r;
+        let q = r.quantity;
+        if (r.expression && typeof r.perunit === "number") {
+          try {
+            q = evalExpression(r.expression, nextQty, r.perunit);
+          } catch {
+            q = nextQty * r.perunit;
+          }
+        }
+        return { ...r, quantity: q, groupQty: nextQty };
+      }),
     );
   };
 
@@ -405,12 +426,18 @@ function BomBuilderPage() {
                   {isGroup && (
                     <div className="flex items-center gap-2 border-b border-accent/30 bg-accent/10 px-3 py-2">
                       <Layers className="h-3.5 w-3.5 text-accent-foreground" />
-                      <span className="text-xs font-semibold text-accent-foreground">
+                      <span className="truncate text-xs font-semibold text-accent-foreground">
                         {first.groupName}
                       </span>
                       <span className="ml-auto text-[10px] text-muted-foreground">
                         {groupRows.length} sub-items
                       </span>
+                      <GroupQtyEditor
+                        value={first.groupQty ?? 1}
+                        onChange={(n) =>
+                          updateGroupQty(first.groupInstanceId!, n)
+                        }
+                      />
                       <button
                         type="button"
                         onClick={() => removeRow(first)}
@@ -639,5 +666,67 @@ function ItemPickerSheet({
         )}
       </div>
     </div>
+  );
+}
+
+function GroupQtyEditor({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setVal(String(value));
+  }, [value]);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select();
+  }, [editing]);
+
+  const commit = () => {
+    const n = Number(val);
+    if (Number.isFinite(n) && n > 0) onChange(n);
+    else setVal(String(value));
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="number"
+        inputMode="numeric"
+        min={1}
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") {
+            setVal(String(value));
+            setEditing(false);
+          }
+        }}
+        className="h-7 w-14 rounded-md border border-input bg-background px-2 text-xs font-semibold"
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setVal(String(value));
+        setEditing(true);
+      }}
+      aria-label="Edit group quantity"
+      className="rounded-full bg-accent/30 px-2.5 py-0.5 text-[11px] font-semibold text-accent-foreground hover:bg-accent/40"
+    >
+      Qty: {value}
+    </button>
   );
 }

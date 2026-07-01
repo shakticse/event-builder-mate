@@ -27,6 +27,12 @@ export interface BomRow {
   groupInstanceId?: string;
   /** parent group name, for UI label */
   groupName?: string;
+  /** parent group's base quantity (the qty variable in expression) */
+  groupQty?: number;
+  /** expression string from API for recomputation */
+  expression?: string;
+  /** perunit_qty for the child */
+  perunit?: number;
   /** true if this row is itself a standalone (non-grouped) item */
   standalone: boolean;
 }
