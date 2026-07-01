@@ -560,10 +560,12 @@ function BomRowItem({
                 setVal(String(row.quantity));
                 setEditing(true);
               }}
+              aria-label="Edit quantity"
               className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm hover:border-primary/40 hover:bg-accent/10 active:bg-accent/20"
             >
               <span className="text-muted-foreground">Qty:</span>
               {row.quantity}
+              <Pencil className="h-3 w-3 text-muted-foreground" />
             </button>
           )}
           <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
