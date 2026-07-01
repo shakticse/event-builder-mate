@@ -725,9 +725,11 @@ function GroupQtyEditor({
         setEditing(true);
       }}
       aria-label="Edit group quantity"
-      className="rounded-full bg-accent/30 px-2.5 py-0.5 text-[11px] font-semibold text-accent-foreground hover:bg-accent/40"
+      className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm hover:border-primary/40 hover:bg-accent/10 active:bg-accent/20"
     >
-      Qty: {value}
+      <span className="text-muted-foreground">Qty:</span>
+      <span>{value}</span>
+      <Pencil className="h-3 w-3 text-muted-foreground" />
     </button>
   );
 }
