@@ -668,3 +668,65 @@ function ItemPickerSheet({
     </div>
   );
 }
+
+function GroupQtyEditor({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setVal(String(value));
+  }, [value]);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select();
+  }, [editing]);
+
+  const commit = () => {
+    const n = Number(val);
+    if (Number.isFinite(n) && n > 0) onChange(n);
+    else setVal(String(value));
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="number"
+        inputMode="numeric"
+        min={1}
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") {
+            setVal(String(value));
+            setEditing(false);
+          }
+        }}
+        className="h-7 w-14 rounded-md border border-input bg-background px-2 text-xs font-semibold"
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setVal(String(value));
+        setEditing(true);
+      }}
+      aria-label="Edit group quantity"
+      className="rounded-full bg-accent/30 px-2.5 py-0.5 text-[11px] font-semibold text-accent-foreground hover:bg-accent/40"
+    >
+      Qty: {value}
+    </button>
+  );
+}
