@@ -184,6 +184,24 @@ function BomBuilderPage() {
     );
   };
 
+  const updateGroupQty = (groupInstanceId: string, nextQty: number) => {
+    if (!Number.isFinite(nextQty) || nextQty <= 0) return;
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.groupInstanceId !== groupInstanceId) return r;
+        let q = r.quantity;
+        if (r.expression && typeof r.perunit === "number") {
+          try {
+            q = evalExpression(r.expression, nextQty, r.perunit);
+          } catch {
+            q = nextQty * r.perunit;
+          }
+        }
+        return { ...r, quantity: q, groupQty: nextQty };
+      }),
+    );
+  };
+
   const removeRow = (row: BomRow) => {
     if (row.groupInstanceId) {
       const groupRows = rows.filter(
