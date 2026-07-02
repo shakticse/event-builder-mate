@@ -9,6 +9,12 @@ import { useEffect } from "react";
 import { Toaster } from "sonner";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 function NotFoundComponent() {
   return (
@@ -78,9 +84,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootComponent() {
   return (
-    <>
-      <Outlet />
-      <Toaster position="top-center" richColors closeButton />
-    </>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b bg-background px-4 md:hidden">
+          <SidebarTrigger />
+          <span className="font-semibold text-foreground">Event Rentals</span>
+        </header>
+        <Outlet />
+        <Toaster position="top-center" richColors closeButton />
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
