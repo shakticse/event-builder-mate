@@ -9,6 +9,12 @@ import { useEffect } from "react";
 import { Toaster } from "sonner";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 function NotFoundComponent() {
   return (
