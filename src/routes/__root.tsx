@@ -87,7 +87,7 @@ function RootComponent() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b bg-background px-4 md:hidden">
+        <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b bg-background px-4">
           <SidebarTrigger />
           <span className="font-semibold text-foreground">Event Rentals</span>
         </header>
