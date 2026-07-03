@@ -485,11 +485,15 @@ function GatePassPage() {
           <button
             type="button"
             onClick={handleExport}
-            disabled={rows.length === 0}
+            disabled={rows.length === 0 || exporting}
             title={rows.length === 0 ? "Add items first" : "Export to Excel"}
             className="flex h-12 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-accent-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
           >
-            <FileSpreadsheet className="h-5 w-5" />
+            {exporting ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-5 w-5" />
+            )}
             Export Excel
           </button>
         </div>
