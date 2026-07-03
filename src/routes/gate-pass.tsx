@@ -189,17 +189,58 @@ function GatePassPage() {
     setRows((prev) => prev.filter((r) => r.rowId !== rowId));
   };
 
-  const handleExport = () => {
+  const readFileAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(file);
+    });
+
+  const handlePhotoFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const available = MAX_PHOTOS - photos.length;
+    if (available <= 0) {
+      toast.error(`Maximum ${MAX_PHOTOS} photos allowed`);
+      return;
+    }
+    const list = Array.from(files).slice(0, available);
+    try {
+      const next: GatePassPhoto[] = [];
+      for (const f of list) {
+        if (!f.type.startsWith("image/")) continue;
+        const dataUrl = await readFileAsDataUrl(f);
+        next.push({ id: uid(), dataUrl, name: f.name || `photo-${Date.now()}.jpg` });
+      }
+      if (next.length > 0) {
+        setPhotos((prev) => [...prev, ...next]);
+        toast.success(`Added ${next.length} photo${next.length === 1 ? "" : "s"}`);
+      }
+      if (files.length > available) {
+        toast.message(`Only added ${available}; ${MAX_PHOTOS} photo max`);
+      }
+    } catch {
+      toast.error("Failed to read image");
+    }
+  };
+
+  const removePhoto = (id: string) =>
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+
+  const handleExport = async () => {
     if (rows.length === 0) return;
     if (!meta.projectName.trim()) {
       toast.error("Please enter a project name");
       return;
     }
+    setExporting(true);
     try {
-      const file = exportGatePassToXlsx(rows, meta);
+      const file = await exportGatePassToXlsx(rows, meta, photos);
       toast.success(`Exported ${file}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(false);
     }
   };
 
