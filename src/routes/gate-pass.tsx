@@ -13,12 +13,15 @@ import {
   Loader2,
   Pencil,
   ClipboardList,
+  Camera,
+  X,
 } from "lucide-react";
 import { type BomApiItem } from "@/lib/bom-types";
 import {
   exportGatePassToXlsx,
   type GatePassRow,
   type GatePassMeta,
+  type GatePassPhoto,
 } from "@/lib/gate-pass-export";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api-client";
@@ -84,6 +87,11 @@ function GatePassPage() {
   const [adding, setAdding] = useState(false);
 
   const [rows, setRows] = useState<GatePassRow[]>([]);
+  const [photos, setPhotos] = useState<GatePassPhoto[]>([]);
+  const [exporting, setExporting] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const MAX_PHOTOS = 5;
 
   const fetchItems = async () => {
     setLoading(true);
@@ -181,17 +189,58 @@ function GatePassPage() {
     setRows((prev) => prev.filter((r) => r.rowId !== rowId));
   };
 
-  const handleExport = () => {
+  const readFileAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(file);
+    });
+
+  const handlePhotoFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const available = MAX_PHOTOS - photos.length;
+    if (available <= 0) {
+      toast.error(`Maximum ${MAX_PHOTOS} photos allowed`);
+      return;
+    }
+    const list = Array.from(files).slice(0, available);
+    try {
+      const next: GatePassPhoto[] = [];
+      for (const f of list) {
+        if (!f.type.startsWith("image/")) continue;
+        const dataUrl = await readFileAsDataUrl(f);
+        next.push({ id: uid(), dataUrl, name: f.name || `photo-${Date.now()}.jpg` });
+      }
+      if (next.length > 0) {
+        setPhotos((prev) => [...prev, ...next]);
+        toast.success(`Added ${next.length} photo${next.length === 1 ? "" : "s"}`);
+      }
+      if (files.length > available) {
+        toast.message(`Only added ${available}; ${MAX_PHOTOS} photo max`);
+      }
+    } catch {
+      toast.error("Failed to read image");
+    }
+  };
+
+  const removePhoto = (id: string) =>
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+
+  const handleExport = async () => {
     if (rows.length === 0) return;
     if (!meta.projectName.trim()) {
       toast.error("Please enter a project name");
       return;
     }
+    setExporting(true);
     try {
-      const file = exportGatePassToXlsx(rows, meta);
+      const file = await exportGatePassToXlsx(rows, meta, photos);
       toast.success(`Exported ${file}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -420,6 +469,89 @@ function GatePassPage() {
             )}
           </div>
         </section>
+
+        {/* Photos */}
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground">
+              Photos
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {photos.length}/{MAX_PHOTOS}
+              </span>
+            </h2>
+          </div>
+
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              void handlePhotoFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              void handlePhotoFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+
+          <div className="flex flex-wrap gap-2">
+            {photos.map((p) => (
+              <div
+                key={p.id}
+                className="relative h-20 w-20 overflow-hidden rounded-lg border border-border bg-muted"
+              >
+                <img
+                  src={p.dataUrl}
+                  alt={p.name}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(p.id)}
+                  aria-label="Remove photo"
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+
+            {photos.length < MAX_PHOTOS && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-input bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                >
+                  <Camera className="h-5 w-5" />
+                  <span className="text-[10px] font-medium">Camera</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-input bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="text-[10px] font-medium">Upload</span>
+                </button>
+              </>
+            )}
+          </div>
+
+          <p className="mt-2 text-xs text-muted-foreground">
+            Photos are embedded in the exported Excel (max {MAX_PHOTOS}).
+          </p>
+        </section>
       </main>
 
       <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -436,11 +568,15 @@ function GatePassPage() {
           <button
             type="button"
             onClick={handleExport}
-            disabled={rows.length === 0}
+            disabled={rows.length === 0 || exporting}
             title={rows.length === 0 ? "Add items first" : "Export to Excel"}
             className="flex h-12 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-accent-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
           >
-            <FileSpreadsheet className="h-5 w-5" />
+            {exporting ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-5 w-5" />
+            )}
             Export Excel
           </button>
         </div>
