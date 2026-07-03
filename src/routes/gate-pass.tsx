@@ -469,6 +469,89 @@ function GatePassPage() {
             )}
           </div>
         </section>
+
+        {/* Photos */}
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground">
+              Photos
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {photos.length}/{MAX_PHOTOS}
+              </span>
+            </h2>
+          </div>
+
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              void handlePhotoFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              void handlePhotoFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+
+          <div className="flex flex-wrap gap-2">
+            {photos.map((p) => (
+              <div
+                key={p.id}
+                className="relative h-20 w-20 overflow-hidden rounded-lg border border-border bg-muted"
+              >
+                <img
+                  src={p.dataUrl}
+                  alt={p.name}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(p.id)}
+                  aria-label="Remove photo"
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+
+            {photos.length < MAX_PHOTOS && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-input bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                >
+                  <Camera className="h-5 w-5" />
+                  <span className="text-[10px] font-medium">Camera</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-input bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="text-[10px] font-medium">Upload</span>
+                </button>
+              </>
+            )}
+          </div>
+
+          <p className="mt-2 text-xs text-muted-foreground">
+            Photos are embedded in the exported Excel (max {MAX_PHOTOS}).
+          </p>
+        </section>
       </main>
 
       <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
