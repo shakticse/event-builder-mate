@@ -13,12 +13,15 @@ import {
   Loader2,
   Pencil,
   ClipboardList,
+  Camera,
+  X,
 } from "lucide-react";
 import { type BomApiItem } from "@/lib/bom-types";
 import {
   exportGatePassToXlsx,
   type GatePassRow,
   type GatePassMeta,
+  type GatePassPhoto,
 } from "@/lib/gate-pass-export";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api-client";
