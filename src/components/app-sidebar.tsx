@@ -20,9 +20,15 @@ const items = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const collapsed = state === "collapsed";
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -48,7 +54,7 @@ export function AppSidebar() {
                     isActive={pathname === item.url}
                     tooltip={collapsed ? item.title : undefined}
                   >
-                    <Link to={item.url}>
+                    <Link to={item.url} onClick={handleLinkClick}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -62,3 +68,4 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
