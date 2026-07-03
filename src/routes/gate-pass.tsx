@@ -87,6 +87,11 @@ function GatePassPage() {
   const [adding, setAdding] = useState(false);
 
   const [rows, setRows] = useState<GatePassRow[]>([]);
+  const [photos, setPhotos] = useState<GatePassPhoto[]>([]);
+  const [exporting, setExporting] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const MAX_PHOTOS = 5;
 
   const fetchItems = async () => {
     setLoading(true);
