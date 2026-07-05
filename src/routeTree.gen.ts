@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ReturnsRouteImport } from './routes/returns'
 import { Route as GatePassRouteImport } from './routes/gate-pass'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ReturnsRoute = ReturnsRouteImport.update({
+  id: '/returns',
+  path: '/returns',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GatePassRoute = GatePassRouteImport.update({
   id: '/gate-pass',
   path: '/gate-pass',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/gate-pass': typeof GatePassRoute
+  '/returns': typeof ReturnsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/gate-pass': typeof GatePassRoute
+  '/returns': typeof ReturnsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/gate-pass': typeof GatePassRoute
+  '/returns': typeof ReturnsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gate-pass'
+  fullPaths: '/' | '/gate-pass' | '/returns'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/gate-pass'
-  id: '__root__' | '/' | '/gate-pass'
+  to: '/' | '/gate-pass' | '/returns'
+  id: '__root__' | '/' | '/gate-pass' | '/returns'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GatePassRoute: typeof GatePassRoute
+  ReturnsRoute: typeof ReturnsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/returns': {
+      id: '/returns'
+      path: '/returns'
+      fullPath: '/returns'
+      preLoaderRoute: typeof ReturnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gate-pass': {
       id: '/gate-pass'
       path: '/gate-pass'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GatePassRoute: GatePassRoute,
+  ReturnsRoute: ReturnsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
