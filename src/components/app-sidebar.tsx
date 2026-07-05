@@ -17,6 +17,7 @@ import {
 const items = [
   { title: "BOM Builder", url: "/", icon: Package },
   { title: "Gate Pass", url: "/gate-pass", icon: ClipboardList },
+  { title: "Return Items", url: "/returns", icon: Undo2 },
 ];
 
 export function AppSidebar() {
