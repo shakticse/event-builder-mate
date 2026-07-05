@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Search,
@@ -11,6 +11,9 @@ import {
   AlertCircle,
   Loader2,
   Undo2,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { type BomApiItem } from "@/lib/bom-types";
 import {
@@ -43,6 +46,8 @@ export const Route = createFileRoute("/returns")({
 
 const API_URL = "/api/items/bomitems";
 
+type QtyField = "goodQty" | "repairQty" | "rejectedQty";
+
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
@@ -64,7 +69,14 @@ function ReturnsPage() {
   });
 
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<BomApiItem | null>(null);
   const [showPicker, setShowPicker] = useState(false);
+  const [adding, setAdding] = useState(false);
+
+  const [goodInput, setGoodInput] = useState("");
+  const [repairInput, setRepairInput] = useState("");
+  const [rejectedInput, setRejectedInput] = useState("");
+
   const [rows, setRows] = useState<ReturnRow[]>([]);
   const [exporting, setExporting] = useState(false);
 
@@ -108,37 +120,70 @@ function ReturnsPage() {
       .slice(0, 50);
   }, [standaloneItems, search]);
 
-  const addItem = (it: BomApiItem) => {
-    const existing = rows.find((r) => r.itemId === it.id);
-    if (existing) {
-      toast.message(`"${it.name}" is already in the list`);
-      setShowPicker(false);
-      setSearch("");
-      return;
-    }
-    setRows((prev) => [
-      {
-        rowId: uid(),
-        itemId: it.id,
-        name: it.name,
-        goodQty: 0,
-        repairQty: 0,
-        rejectedQty: 0,
-        price: it.itemPrice,
-        categoryName: it.categoryName,
-      },
-      ...prev,
-    ]);
-    toast.success(`Added "${it.name}"`);
-    setShowPicker(false);
+  const resetInputs = () => {
+    setSelected(null);
     setSearch("");
+    setGoodInput("");
+    setRepairInput("");
+    setRejectedInput("");
   };
 
-  const updateQty = (
-    rowId: string,
-    field: "goodQty" | "repairQty" | "rejectedQty",
-    val: number,
-  ) => {
+  const parseQty = (v: string) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  };
+
+  const handleAdd = () => {
+    if (!selected) {
+      toast.error("Pick an item first");
+      return;
+    }
+    const good = parseQty(goodInput);
+    const repair = parseQty(repairInput);
+    const rejected = parseQty(rejectedInput);
+    if (good + repair + rejected <= 0) {
+      toast.error("Enter at least one quantity");
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const existingIdx = rows.findIndex((r) => r.itemId === selected.id);
+      if (existingIdx >= 0) {
+        setRows((prev) => {
+          const ex = prev[existingIdx];
+          const updated: ReturnRow = {
+            ...ex,
+            goodQty: ex.goodQty + good,
+            repairQty: ex.repairQty + repair,
+            rejectedQty: ex.rejectedQty + rejected,
+          };
+          return [updated, ...prev.filter((_, i) => i !== existingIdx)];
+        });
+        toast.message(`Updated "${selected.name}"`);
+      } else {
+        setRows((prev) => [
+          {
+            rowId: uid(),
+            itemId: selected.id,
+            name: selected.name,
+            goodQty: good,
+            repairQty: repair,
+            rejectedQty: rejected,
+            price: selected.itemPrice,
+            categoryName: selected.categoryName,
+          },
+          ...prev,
+        ]);
+        toast.success(`Added "${selected.name}"`);
+      }
+      resetInputs();
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const updateQty = (rowId: string, field: QtyField, val: number) => {
     const n = Number.isFinite(val) && val >= 0 ? Math.floor(val) : 0;
     setRows((prev) =>
       prev.map((r) => (r.rowId === rowId ? { ...r, [field]: n } : r)),
@@ -250,6 +295,7 @@ function ReturnsPage() {
           <h2 className="mb-3 text-sm font-semibold text-foreground">
             Add an item
           </h2>
+
           <button
             type="button"
             onClick={() => setShowPicker(true)}
@@ -257,10 +303,52 @@ function ReturnsPage() {
             className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-3 text-left text-sm hover:border-primary/40 disabled:opacity-50"
           >
             <Search className="h-4 w-4 text-muted-foreground" />
-            <span className="flex-1 truncate text-muted-foreground">
-              {loading ? "Loading items…" : "Search & add an item"}
+            <span className="flex-1 truncate">
+              {selected ? (
+                <span className="font-medium text-foreground">
+                  {selected.name}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">
+                  {loading ? "Loading items…" : "Search & select an item"}
+                </span>
+              )}
             </span>
-            <Plus className="h-4 w-4 text-muted-foreground" />
+          </button>
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <QtyField
+              label="Good"
+              tone="good"
+              value={goodInput}
+              onChange={setGoodInput}
+            />
+            <QtyField
+              label="Repair"
+              tone="repair"
+              value={repairInput}
+              onChange={setRepairInput}
+            />
+            <QtyField
+              label="Rejected"
+              tone="rejected"
+              value={rejectedInput}
+              onChange={setRejectedInput}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={!selected || adding}
+            className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:opacity-50"
+          >
+            {adding ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            Add to Return
           </button>
 
           {error && (
@@ -307,7 +395,7 @@ function ReturnsPage() {
                   <ReturnRowItem
                     key={row.rowId}
                     row={row}
-                    onChange={(f, v) => updateQty(row.rowId, f, v)}
+                    onChangeQty={(f, v) => updateQty(row.rowId, f, v)}
                     onRemove={() => removeRow(row.rowId)}
                   />
                 ))}
@@ -349,11 +437,11 @@ function ReturnsPage() {
           loading={loading}
           search={search}
           onSearch={setSearch}
-          onPick={addItem}
-          onClose={() => {
+          onPick={(it) => {
+            setSelected(it);
             setShowPicker(false);
-            setSearch("");
           }}
+          onClose={() => setShowPicker(false)}
         />
       )}
     </div>
@@ -392,58 +480,149 @@ function Field({
   );
 }
 
-function QtyInput({
+const TONE_CLASSES = {
+  good: {
+    label: "text-emerald-700",
+    input:
+      "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/30",
+    chip: "bg-emerald-100 text-emerald-800",
+  },
+  repair: {
+    label: "text-amber-700",
+    input: "border-amber-300 focus:border-amber-500 focus:ring-amber-500/30",
+    chip: "bg-amber-100 text-amber-800",
+  },
+  rejected: {
+    label: "text-red-700",
+    input: "border-red-300 focus:border-red-500 focus:ring-red-500/30",
+    chip: "bg-red-100 text-red-800",
+  },
+} as const;
+
+type Tone = keyof typeof TONE_CLASSES;
+
+function QtyField({
   label,
+  tone,
   value,
   onChange,
-  tone,
 }: {
   label: string;
-  value: number;
-  onChange: (n: number) => void;
-  tone: "good" | "repair" | "rejected";
+  tone: Tone;
+  value: string;
+  onChange: (v: string) => void;
 }) {
-  const toneClasses = {
-    good: "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/30",
-    repair: "border-amber-300 focus:border-amber-500 focus:ring-amber-500/30",
-    rejected: "border-red-300 focus:border-red-500 focus:ring-red-500/30",
-  }[tone];
-  const labelTone = {
-    good: "text-emerald-700",
-    repair: "text-amber-700",
-    rejected: "text-red-700",
-  }[tone];
+  const t = TONE_CLASSES[tone];
   return (
     <div className="space-y-1">
-      <label className={cn("text-[10px] font-semibold uppercase tracking-wide", labelTone)}>
+      <label
+        className={cn(
+          "text-[10px] font-semibold uppercase tracking-wide",
+          t.label,
+        )}
+      >
         {label}
       </label>
       <input
         type="number"
         inputMode="numeric"
         min={0}
-        value={value === 0 ? "" : value}
+        value={value}
         placeholder="0"
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        onChange={(e) => onChange(e.target.value)}
         className={cn(
           "h-10 w-full rounded-lg border bg-background px-2 text-center text-sm font-semibold text-foreground focus:outline-none focus:ring-1",
-          toneClasses,
+          t.input,
         )}
       />
     </div>
   );
 }
 
+function QtyChip({
+  label,
+  tone,
+  value,
+  onChange,
+}: {
+  label: string;
+  tone: Tone;
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  const t = TONE_CLASSES[tone];
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const commit = () => {
+    const n = Number(val);
+    if (Number.isFinite(n) && n >= 0) onChange(Math.floor(n));
+    else setVal(String(value));
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setVal(String(value));
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="inline-flex items-center gap-1">
+        <span className={cn("text-[10px] font-semibold", t.label)}>{label}</span>
+        <input
+          ref={inputRef}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") cancel();
+          }}
+          className={cn(
+            "w-14 rounded-md border bg-background px-1.5 py-0.5 text-center text-xs font-semibold",
+            t.input,
+          )}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setVal(String(value));
+        setEditing(true);
+      }}
+      aria-label={`Edit ${label}`}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+        t.chip,
+      )}
+    >
+      <span className="opacity-70">{label}:</span>
+      {value}
+      <Pencil className="h-3 w-3 opacity-60" />
+    </button>
+  );
+}
+
 function ReturnRowItem({
   row,
-  onChange,
+  onChangeQty,
   onRemove,
 }: {
   row: ReturnRow;
-  onChange: (
-    field: "goodQty" | "repairQty" | "rejectedQty",
-    value: number,
-  ) => void;
+  onChangeQty: (field: QtyField, value: number) => void;
   onRemove: () => void;
 }) {
   const total = row.goodQty + row.repairQty + row.rejectedQty;
@@ -467,6 +646,26 @@ function ReturnRowItem({
               Total: {total}
             </span>
           </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <QtyChip
+              label="Good"
+              tone="good"
+              value={row.goodQty}
+              onChange={(n) => onChangeQty("goodQty", n)}
+            />
+            <QtyChip
+              label="Repair"
+              tone="repair"
+              value={row.repairQty}
+              onChange={(n) => onChangeQty("repairQty", n)}
+            />
+            <QtyChip
+              label="Rejected"
+              tone="rejected"
+              value={row.rejectedQty}
+              onChange={(n) => onChangeQty("rejectedQty", n)}
+            />
+          </div>
         </div>
         <button
           type="button"
@@ -476,26 +675,6 @@ function ReturnRowItem({
         >
           <Trash2 className="h-5 w-5" />
         </button>
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <QtyInput
-          label="Good"
-          value={row.goodQty}
-          onChange={(n) => onChange("goodQty", n)}
-          tone="good"
-        />
-        <QtyInput
-          label="Repair"
-          value={row.repairQty}
-          onChange={(n) => onChange("repairQty", n)}
-          tone="repair"
-        />
-        <QtyInput
-          label="Rejected"
-          value={row.rejectedQty}
-          onChange={(n) => onChange("rejectedQty", n)}
-          tone="rejected"
-        />
       </div>
     </li>
   );
