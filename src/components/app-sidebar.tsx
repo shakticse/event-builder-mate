@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ClipboardList, Package } from "lucide-react";
+import { ClipboardList, Package, Undo2 } from "lucide-react";
 
 import {
   Sidebar,
