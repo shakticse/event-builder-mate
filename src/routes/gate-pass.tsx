@@ -234,6 +234,22 @@ function GatePassPage() {
       toast.error("Please enter a project name");
       return;
     }
+    if (!meta.vehicleType) {
+      toast.error("Please select a vehicle type");
+      return;
+    }
+    if (!meta.vehicleNumber.trim()) {
+      toast.error("Please enter a vehicle number");
+      return;
+    }
+    if (!meta.driverName.trim()) {
+      toast.error("Please enter the driver name");
+      return;
+    }
+    if (!meta.phoneNumber.trim()) {
+      toast.error("Please enter the driver phone number");
+      return;
+    }
     setExporting(true);
     try {
       const file = await exportGatePassToXlsx(rows, meta, photos);
