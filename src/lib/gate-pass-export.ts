@@ -10,6 +10,7 @@ export interface GatePassRow {
 }
 
 export interface GatePassMeta {
+  passType: "Inward" | "Return";
   projectName: string;
   projectLocation: string;
   vehicleType: string;
@@ -77,6 +78,7 @@ export async function exportGatePassToXlsx(
   ws.addRow(["Gate Pass"]);
   ws.getRow(1).font = { bold: true, size: 14 };
   ws.addRow([]);
+  ws.addRow(["Pass Type", meta.passType === "Inward" ? "Inward" : "Return"]);
   ws.addRow(["Project Name", meta.projectName]);
   ws.addRow(["Project Location", meta.projectLocation]);
   ws.addRow(["Vehicle Type", meta.vehicleType]);
