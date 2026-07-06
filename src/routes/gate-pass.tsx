@@ -280,6 +280,25 @@ function GatePassPage() {
             Project details
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">
+                Pass type
+                <span className="ml-0.5 text-destructive">*</span>
+              </label>
+              <select
+                value={meta.passType}
+                onChange={(e) =>
+                  setField(
+                    "passType",
+                    e.target.value === "Return" ? "Return" : "Inward",
+                  )
+                }
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="Inward">Inward</option>
+                <option value="Return">Return</option>
+              </select>
+            </div>
             <Field
               label="Project name"
               value={meta.projectName}
@@ -305,10 +324,12 @@ function GatePassPage() {
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">
                 Vehicle type
+                <span className="ml-0.5 text-destructive">*</span>
               </label>
               <select
                 value={meta.vehicleType}
                 onChange={(e) => setField("vehicleType", e.target.value)}
+                required
                 className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="">Select…</option>
@@ -324,12 +345,14 @@ function GatePassPage() {
               value={meta.vehicleNumber}
               onChange={(v) => setField("vehicleNumber", v.toUpperCase())}
               placeholder="e.g. MH12 AB 1234"
+              required
             />
             <Field
               label="Driver name"
               value={meta.driverName}
               onChange={(v) => setField("driverName", v)}
               placeholder="Full name"
+              required
             />
             <Field
               label="Phone number"
@@ -340,6 +363,7 @@ function GatePassPage() {
               placeholder="10-digit mobile"
               type="tel"
               inputMode="tel"
+              required
             />
           </div>
         </section>
