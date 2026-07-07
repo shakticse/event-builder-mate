@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ClipboardList, Package, Undo2 } from "lucide-react";
+import { ClipboardList, Layers, Package, Undo2 } from "lucide-react";
 
 import {
   Sidebar,
@@ -18,6 +18,7 @@ const items = [
   { title: "BOM Builder", url: "/", icon: Package },
   { title: "Gate Pass", url: "/gate-pass", icon: ClipboardList },
   { title: "Return Items", url: "/returns", icon: Undo2 },
+  { title: "Stock Consolidation", url: "/stock-consolidation", icon: Layers },
 ];
 
 export function AppSidebar() {
