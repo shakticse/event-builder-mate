@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StockConsolidationRouteImport } from './routes/stock-consolidation'
 import { Route as ReturnsRouteImport } from './routes/returns'
 import { Route as GatePassRouteImport } from './routes/gate-pass'
 import { Route as IndexRouteImport } from './routes/index'
 
+const StockConsolidationRoute = StockConsolidationRouteImport.update({
+  id: '/stock-consolidation',
+  path: '/stock-consolidation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReturnsRoute = ReturnsRouteImport.update({
   id: '/returns',
   path: '/returns',
@@ -33,34 +39,45 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/gate-pass': typeof GatePassRoute
   '/returns': typeof ReturnsRoute
+  '/stock-consolidation': typeof StockConsolidationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/gate-pass': typeof GatePassRoute
   '/returns': typeof ReturnsRoute
+  '/stock-consolidation': typeof StockConsolidationRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/gate-pass': typeof GatePassRoute
   '/returns': typeof ReturnsRoute
+  '/stock-consolidation': typeof StockConsolidationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gate-pass' | '/returns'
+  fullPaths: '/' | '/gate-pass' | '/returns' | '/stock-consolidation'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/gate-pass' | '/returns'
-  id: '__root__' | '/' | '/gate-pass' | '/returns'
+  to: '/' | '/gate-pass' | '/returns' | '/stock-consolidation'
+  id: '__root__' | '/' | '/gate-pass' | '/returns' | '/stock-consolidation'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GatePassRoute: typeof GatePassRoute
   ReturnsRoute: typeof ReturnsRoute
+  StockConsolidationRoute: typeof StockConsolidationRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/stock-consolidation': {
+      id: '/stock-consolidation'
+      path: '/stock-consolidation'
+      fullPath: '/stock-consolidation'
+      preLoaderRoute: typeof StockConsolidationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/returns': {
       id: '/returns'
       path: '/returns'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GatePassRoute: GatePassRoute,
   ReturnsRoute: ReturnsRoute,
+  StockConsolidationRoute: StockConsolidationRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
