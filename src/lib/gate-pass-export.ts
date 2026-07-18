@@ -200,6 +200,31 @@ export async function exportGatePassToXlsx(
     row++;
   }
 
+  // Total Goods Value row + amount in words
+  const rawGoods = (meta.totalGoodsValue || "").toString().trim();
+  const goodsNum = Number(rawGoods.replace(/[^0-9.-]/g, ""));
+  if (rawGoods) {
+    const tr = ws.getRow(row);
+    tr.getCell(1).value = "Total Goods Value";
+    tr.getCell(1).font = { bold: true };
+    ws.mergeCells(`B${row}:C${row}`);
+    tr.getCell(4).value = Number.isFinite(goodsNum) ? goodsNum : rawGoods;
+    tr.getCell(4).font = { bold: true };
+    row++;
+
+    if (Number.isFinite(goodsNum)) {
+      const wr = ws.getRow(row);
+      wr.getCell(1).value = "Amount in Words";
+      wr.getCell(1).font = { bold: true };
+      ws.mergeCells(`B${row}:D${row}`);
+      wr.getCell(2).value = numberToWords(Math.trunc(Math.abs(goodsNum)));
+      wr.getCell(2).alignment = { wrapText: true };
+      row++;
+    }
+  }
+
+
+
   if (photos.length > 0) {
     const ps = wb.addWorksheet("Photos");
     ps.columns = [{ width: 60 }];
