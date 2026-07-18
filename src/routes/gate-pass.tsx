@@ -320,12 +320,12 @@ function GatePassPage() {
                 onChange={(e) =>
                   setField(
                     "passType",
-                    e.target.value === "Return" ? "Return" : "Inward",
+                    e.target.value === "Return" ? "Return" : "Outward",
                   )
                 }
                 className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
               >
-                <option value="Inward">Inward</option>
+                <option value="Outward">Outward</option>
                 <option value="Return">Return</option>
               </select>
             </div>
@@ -341,6 +341,105 @@ function GatePassPage() {
               value={meta.projectLocation}
               onChange={(v) => setField("projectLocation", v)}
               placeholder="City / venue"
+            />
+            <Field
+              label="EWay Bill No"
+              value={meta.ewayBillNo}
+              onChange={(v) => setField("ewayBillNo", v)}
+              placeholder="EWay Bill Number"
+            />
+            <Field
+              label="DC No."
+              value={meta.dcNo}
+              onChange={(v) => setField("dcNo", v)}
+              placeholder="Delivery Challan No."
+            />
+            <Field
+              label="DC Date"
+              value={meta.dcDate}
+              onChange={(v) => setField("dcDate", v)}
+              type="date"
+            />
+            <Field
+              label="Total Goods Value"
+              value={meta.totalGoodsValue}
+              onChange={(v) => setField("totalGoodsValue", v)}
+              placeholder="e.g. 50000"
+              inputMode="decimal"
+            />
+            <div className="sm:col-span-2">
+              <Field
+                label="Remarks"
+                value={meta.remarks}
+                onChange={(v) => setField("remarks", v)}
+                placeholder="Notes / remarks"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* From Address */}
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
+            From Address
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Field
+                label="Address"
+                value={meta.fromAddress.address}
+                onChange={(v) => setAddressField("fromAddress", "address", v)}
+                placeholder="Street / building"
+              />
+            </div>
+            <Field
+              label="City"
+              value={meta.fromAddress.city}
+              onChange={(v) => setAddressField("fromAddress", "city", v)}
+            />
+            <Field
+              label="State"
+              value={meta.fromAddress.state}
+              onChange={(v) => setAddressField("fromAddress", "state", v)}
+            />
+            <Field
+              label="Zip Code"
+              value={meta.fromAddress.zip}
+              onChange={(v) => setAddressField("fromAddress", "zip", v)}
+              inputMode="numeric"
+            />
+          </div>
+        </section>
+
+        {/* To Address */}
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
+            To Address
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Field
+                label="Address"
+                value={meta.toAddress.address}
+                onChange={(v) => setAddressField("toAddress", "address", v)}
+                placeholder="Street / building"
+              />
+            </div>
+            <Field
+              label="City"
+              value={meta.toAddress.city}
+              onChange={(v) => setAddressField("toAddress", "city", v)}
+            />
+            <Field
+              label="State"
+              value={meta.toAddress.state}
+              onChange={(v) => setAddressField("toAddress", "state", v)}
+            />
+            <Field
+              label="Zip Code"
+              value={meta.toAddress.zip}
+              onChange={(v) => setAddressField("toAddress", "zip", v)}
+              inputMode="numeric"
             />
           </div>
         </section>
