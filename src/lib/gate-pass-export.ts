@@ -9,10 +9,24 @@ export interface GatePassRow {
   categoryName?: string;
 }
 
+export interface GatePassAddress {
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+}
+
 export interface GatePassMeta {
-  passType: "Inward" | "Return";
+  passType: "Outward" | "Return";
   projectName: string;
   projectLocation: string;
+  ewayBillNo: string;
+  dcNo: string;
+  dcDate: string;
+  remarks: string;
+  totalGoodsValue: string;
+  fromAddress: GatePassAddress;
+  toAddress: GatePassAddress;
   vehicleType: string;
   vehicleNumber: string;
   driverName: string;
@@ -21,7 +35,7 @@ export interface GatePassMeta {
 
 export interface GatePassPhoto {
   id: string;
-  dataUrl: string; // "data:image/png;base64,...."
+  dataUrl: string;
   name: string;
 }
 
@@ -70,34 +84,120 @@ export async function exportGatePassToXlsx(
 
   ws.columns = [
     { width: 24 },
-    { width: 38 },
-    { width: 12 },
-    { width: 14 },
+    { width: 30 },
+    { width: 24 },
+    { width: 30 },
   ];
 
-  ws.addRow(["Gate Pass"]);
-  ws.getRow(1).font = { bold: true, size: 14 };
-  ws.addRow([]);
-  ws.addRow(["Pass Type", meta.passType === "Inward" ? "Inward" : "Return"]);
-  ws.addRow(["Project Name", meta.projectName]);
-  ws.addRow(["Project Location", meta.projectLocation]);
-  ws.addRow(["Vehicle Type", meta.vehicleType]);
-  ws.addRow(["Vehicle Number", meta.vehicleNumber]);
-  ws.addRow(["Driver Name", meta.driverName]);
-  ws.addRow(["Phone Number", meta.phoneNumber]);
-  ws.addRow(["Date", new Date().toLocaleString()]);
-  ws.addRow([]);
-  const header = ws.addRow(["Category Name", "Item Name", "Quantity", "Item Price"]);
-  header.font = { bold: true };
+  const centerBold = {
+    alignment: { horizontal: "center" as const, vertical: "middle" as const },
+    font: { bold: true },
+  };
+
+  // Row 1: Company heading
+  ws.mergeCells("A1:D1");
+  const c1 = ws.getCell("A1");
+  c1.value = "PAVILIIONS  AND INTERIORS INDIA PVT. LTD";
+  c1.alignment = { horizontal: "center", vertical: "middle" };
+  c1.font = { bold: true, size: 16 };
+  ws.getRow(1).height = 26;
+
+  // Row 2: CHALLAN
+  ws.mergeCells("A2:D2");
+  const c2 = ws.getCell("A2");
+  c2.value = "CHALLAN";
+  c2.alignment = { horizontal: "center", vertical: "middle" };
+  c2.font = { bold: true, size: 13 };
+  ws.getRow(2).height = 20;
+
+  // Row 3: spacer
+  let row = 4;
+
+  // From Address / To Address side by side
+  ws.mergeCells(`A${row}:B${row}`);
+  ws.mergeCells(`C${row}:D${row}`);
+  const fromHead = ws.getCell(`A${row}`);
+  fromHead.value = "From Address";
+  Object.assign(fromHead, centerBold);
+  fromHead.alignment = { horizontal: "center", vertical: "middle" };
+  fromHead.font = { bold: true };
+  const toHead = ws.getCell(`C${row}`);
+  toHead.value = "To Address";
+  toHead.alignment = { horizontal: "center", vertical: "middle" };
+  toHead.font = { bold: true };
+  row++;
+
+  const addrPairs: Array<[string, string, string]> = [
+    ["Address", meta.fromAddress.address, meta.toAddress.address],
+    ["City", meta.fromAddress.city, meta.toAddress.city],
+    ["State", meta.fromAddress.state, meta.toAddress.state],
+    ["Zip Code", meta.fromAddress.zip, meta.toAddress.zip],
+  ];
+  for (const [label, fromV, toV] of addrPairs) {
+    const r = ws.getRow(row);
+    r.getCell(1).value = label;
+    r.getCell(1).font = { bold: true };
+    r.getCell(2).value = fromV;
+    r.getCell(3).value = label;
+    r.getCell(3).font = { bold: true };
+    r.getCell(4).value = toV;
+    row++;
+  }
+
+  row++; // spacer
+
+  // Project details
+  ws.mergeCells(`A${row}:D${row}`);
+  const pdHead = ws.getCell(`A${row}`);
+  pdHead.value = "Project Details";
+  pdHead.alignment = { horizontal: "center", vertical: "middle" };
+  pdHead.font = { bold: true };
+  row++;
+
+  const details: Array<[string, string]> = [
+    ["Pass Type", meta.passType],
+    ["Project Name", meta.projectName],
+    ["Project Location", meta.projectLocation],
+    ["EWay Bill No", meta.ewayBillNo],
+    ["DC No.", meta.dcNo],
+    ["DC Date", meta.dcDate],
+    ["Total Goods Value", meta.totalGoodsValue],
+    ["Remarks", meta.remarks],
+    ["Vehicle Type", meta.vehicleType],
+    ["Vehicle Number", meta.vehicleNumber],
+    ["Driver/Transporter Name", meta.driverName],
+    ["Phone Number", meta.phoneNumber],
+    ["Date", new Date().toLocaleString()],
+  ];
+  for (const [k, v] of details) {
+    const r = ws.getRow(row);
+    r.getCell(1).value = k;
+    r.getCell(1).font = { bold: true };
+    ws.mergeCells(`B${row}:D${row}`);
+    r.getCell(2).value = v;
+    row++;
+  }
+
+  row++; // spacer
+
+  // Items header
+  const headerRow = ws.getRow(row);
+  headerRow.getCell(1).value = "Category Name";
+  headerRow.getCell(2).value = "Item Name";
+  headerRow.getCell(3).value = "Quantity";
+  headerRow.getCell(4).value = "Item Price";
+  headerRow.font = { bold: true };
+  headerRow.alignment = { horizontal: "center", vertical: "middle" };
+  row++;
 
   const consolidated = consolidate(rows);
   for (const r of consolidated) {
-    ws.addRow([
-      r.categoryName ?? "",
-      r.name,
-      r.quantity,
-      r.price === null ? "N/A" : r.price,
-    ]);
+    const rr = ws.getRow(row);
+    rr.getCell(1).value = r.categoryName ?? "";
+    rr.getCell(2).value = r.name;
+    rr.getCell(3).value = r.quantity;
+    rr.getCell(4).value = r.price === null ? "N/A" : r.price;
+    row++;
   }
 
   if (photos.length > 0) {
@@ -118,8 +218,7 @@ export async function exportGatePassToXlsx(
         extension: extFromDataUrl(p.dataUrl),
       });
 
-      // Reserve ~20 rows for the image (each ~20px tall = 400px)
-      const imgTopRow = currentRow - 1; // 0-indexed row for anchor
+      const imgTopRow = currentRow - 1;
       const imgRows = 20;
       for (let r = currentRow; r < currentRow + imgRows; r++) {
         ps.getRow(r).height = 20;
