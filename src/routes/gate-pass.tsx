@@ -268,8 +268,14 @@ function GatePassPage() {
     }
   };
 
-  const setField = (k: keyof GatePassMeta, v: string) =>
+  const setField = <K extends keyof GatePassMeta>(k: K, v: GatePassMeta[K]) =>
     setMeta((m) => ({ ...m, [k]: v }));
+
+  const setAddressField = (
+    which: "fromAddress" | "toAddress",
+    k: keyof GatePassAddress,
+    v: string,
+  ) => setMeta((m) => ({ ...m, [which]: { ...m[which], [k]: v } }));
 
   return (
     <div className="min-h-screen bg-background pb-32">
