@@ -1,5 +1,44 @@
 import ExcelJS from "exceljs";
 
+const ONES = [
+  "zero","one","two","three","four","five","six","seven","eight","nine",
+  "ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen",
+  "seventeen","eighteen","nineteen",
+];
+const TENS = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+
+function belowThousand(n: number): string {
+  let out = "";
+  if (n >= 100) {
+    out += ONES[Math.floor(n / 100)] + " hundred";
+    n %= 100;
+    if (n) out += " ";
+  }
+  if (n >= 20) {
+    out += TENS[Math.floor(n / 10)];
+    if (n % 10) out += " " + ONES[n % 10];
+  } else if (n > 0) {
+    out += ONES[n];
+  }
+  return out;
+}
+
+function numberToWords(n: number): string {
+  if (n === 0) return "zero";
+  const parts: string[] = [];
+  const crore = Math.floor(n / 10000000); n %= 10000000;
+  const lakh = Math.floor(n / 100000); n %= 100000;
+  const thousand = Math.floor(n / 1000); n %= 1000;
+  const rest = n;
+  if (crore) parts.push(belowThousand(crore) + " crore");
+  if (lakh) parts.push(belowThousand(lakh) + " lakh");
+  if (thousand) parts.push(belowThousand(thousand) + " thousand");
+  if (rest) parts.push(belowThousand(rest));
+  return parts.join(" ").trim();
+}
+
+
+
 export interface GatePassRow {
   rowId: string;
   itemId: number;
