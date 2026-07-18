@@ -72,9 +72,16 @@ function GatePassPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [meta, setMeta] = useState<GatePassMeta>({
-    passType: "Inward",
+    passType: "Outward",
     projectName: "",
     projectLocation: "",
+    ewayBillNo: "",
+    dcNo: "",
+    dcDate: "",
+    remarks: "",
+    totalGoodsValue: "",
+    fromAddress: { address: "", city: "", state: "", zip: "" },
+    toAddress: { address: "", city: "", state: "", zip: "" },
     vehicleType: "",
     vehicleNumber: "",
     driverName: "",
