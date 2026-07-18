@@ -21,6 +21,7 @@ import {
   exportGatePassToXlsx,
   type GatePassRow,
   type GatePassMeta,
+  type GatePassAddress,
   type GatePassPhoto,
 } from "@/lib/gate-pass-export";
 import { cn } from "@/lib/utils";
