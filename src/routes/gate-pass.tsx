@@ -477,7 +477,7 @@ function GatePassPage() {
               required
             />
             <Field
-              label="Driver name"
+              label="Driver/Transporter Name"
               value={meta.driverName}
               onChange={(v) => setField("driverName", v)}
               placeholder="Full name"
