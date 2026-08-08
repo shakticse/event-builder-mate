@@ -333,7 +333,7 @@ function GatePassPage() {
               label="Project name"
               value={meta.projectName}
               onChange={(v) => setField("projectName", v)}
-              placeholder="e.g. ACME Wedding"
+              placeholder="e.g. G20 Summit"
               required
             />
             <Field

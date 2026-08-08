@@ -12,12 +12,13 @@ import {
   Loader2,
   Undo2,
   Pencil,
-  Check,
+  ImagePlus,
   X,
 } from "lucide-react";
 import { type BomApiItem } from "@/lib/bom-types";
 import {
   exportReturnsToXlsx,
+  MAX_ROW_IMAGES,
   type ReturnRow,
   type ReturnMeta,
 } from "@/lib/returns-export";
@@ -31,13 +32,13 @@ export const Route = createFileRoute("/returns")({
       {
         name: "description",
         content:
-          "Record returned rental items and split quantities by Good, Needs Repair, and Rejected.",
+          "Record returned rental items with vehicle details and split quantities by Good and Damaged.",
       },
       { property: "og:title", content: "Return Items — Event Rentals" },
       {
         property: "og:description",
         content:
-          "Record returned rental items and split quantities by Good, Needs Repair, and Rejected.",
+          "Record returned rental items with vehicle details and split quantities by Good and Damaged.",
       },
     ],
   }),
@@ -46,7 +47,7 @@ export const Route = createFileRoute("/returns")({
 
 const API_URL = "/api/items/bomitems";
 
-type QtyField = "goodQty" | "repairQty" | "rejectedQty";
+type QtyField = "goodQty" | "damagedQty";
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -55,6 +56,40 @@ function uid() {
 function formatPrice(p: number | null) {
   if (p === null || p === undefined) return "N/A";
   return `₹${p.toLocaleString()}`;
+}
+
+const MAX_IMAGE_DIM = 900;
+
+function fileToCompressedDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.onload = () => {
+      const src = String(reader.result);
+      const img = new Image();
+      img.onerror = () => reject(new Error("decode failed"));
+      img.onload = () => {
+        const scale = Math.min(
+          1,
+          MAX_IMAGE_DIM / Math.max(img.width, img.height),
+        );
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(src);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function ReturnsPage() {
@@ -66,6 +101,10 @@ function ReturnsPage() {
     projectName: "",
     siteLocation: "",
     description: "",
+    vehicleNo: "",
+    vehicleType: "",
+    chalanNo: "",
+    receivedDate: "",
   });
 
   const [search, setSearch] = useState("");
@@ -74,8 +113,8 @@ function ReturnsPage() {
   const [adding, setAdding] = useState(false);
 
   const [goodInput, setGoodInput] = useState("");
-  const [repairInput, setRepairInput] = useState("");
-  const [rejectedInput, setRejectedInput] = useState("");
+  const [damagedInput, setDamagedInput] = useState("");
+
 
   const [rows, setRows] = useState<ReturnRow[]>([]);
   const [exporting, setExporting] = useState(false);
@@ -124,8 +163,7 @@ function ReturnsPage() {
     setSelected(null);
     setSearch("");
     setGoodInput("");
-    setRepairInput("");
-    setRejectedInput("");
+    setDamagedInput("");
   };
 
   const parseQty = (v: string) => {
@@ -139,9 +177,8 @@ function ReturnsPage() {
       return;
     }
     const good = parseQty(goodInput);
-    const repair = parseQty(repairInput);
-    const rejected = parseQty(rejectedInput);
-    if (good + repair + rejected <= 0) {
+    const damaged = parseQty(damagedInput);
+    if (good + damaged <= 0) {
       toast.error("Enter at least one quantity");
       return;
     }
@@ -155,8 +192,7 @@ function ReturnsPage() {
           const updated: ReturnRow = {
             ...ex,
             goodQty: ex.goodQty + good,
-            repairQty: ex.repairQty + repair,
-            rejectedQty: ex.rejectedQty + rejected,
+            damagedQty: ex.damagedQty + damaged,
           };
           return [updated, ...prev.filter((_, i) => i !== existingIdx)];
         });
@@ -168,10 +204,10 @@ function ReturnsPage() {
             itemId: selected.id,
             name: selected.name,
             goodQty: good,
-            repairQty: repair,
-            rejectedQty: rejected,
+            damagedQty: damaged,
             price: selected.itemPrice,
             categoryName: selected.categoryName,
+            images: [],
           },
           ...prev,
         ]);
@@ -190,8 +226,49 @@ function ReturnsPage() {
     );
   };
 
+  const addImages = async (rowId: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const row = rows.find((r) => r.rowId === rowId);
+    const current = row?.images ?? [];
+    const slots = MAX_ROW_IMAGES - current.length;
+    if (slots <= 0) {
+      toast.error(`Max ${MAX_ROW_IMAGES} images per item`);
+      return;
+    }
+    const picked = Array.from(files).slice(0, slots);
+    try {
+      const encoded = await Promise.all(picked.map(fileToCompressedDataUrl));
+      setRows((prev) =>
+        prev.map((r) =>
+          r.rowId === rowId
+            ? {
+                ...r,
+                images: [...(r.images ?? []), ...encoded].slice(
+                  0,
+                  MAX_ROW_IMAGES,
+                ),
+              }
+            : r,
+        ),
+      );
+    } catch {
+      toast.error("Could not read image");
+    }
+  };
+
+  const removeImage = (rowId: string, index: number) =>
+    setRows((prev) =>
+      prev.map((r) =>
+        r.rowId === rowId
+          ? { ...r, images: (r.images ?? []).filter((_, i) => i !== index) }
+          : r,
+      ),
+    );
+
   const removeRow = (rowId: string) =>
     setRows((prev) => prev.filter((r) => r.rowId !== rowId));
+
+
 
   const setField = (k: keyof ReturnMeta, v: string) =>
     setMeta((m) => ({ ...m, [k]: v }));
@@ -202,9 +279,7 @@ function ReturnsPage() {
       toast.error("Please enter a Project / BOM number");
       return;
     }
-    const hasAnyQty = rows.some(
-      (r) => r.goodQty + r.repairQty + r.rejectedQty > 0,
-    );
+    const hasAnyQty = rows.some((r) => r.goodQty + r.damagedQty > 0);
     if (!hasAnyQty) {
       toast.error("Enter at least one quantity");
       return;
@@ -223,12 +298,12 @@ function ReturnsPage() {
   const totals = rows.reduce(
     (a, r) => {
       a.good += r.goodQty;
-      a.repair += r.repairQty;
-      a.rejected += r.rejectedQty;
+      a.damaged += r.damagedQty;
       return a;
     },
-    { good: 0, repair: 0, rejected: 0 },
+    { good: 0, damaged: 0 },
   );
+
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -290,6 +365,40 @@ function ReturnsPage() {
           </div>
         </section>
 
+        {/* Vehicle details */}
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
+            Vehicle details
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field
+              label="Vehicle No"
+              value={meta.vehicleNo}
+              onChange={(v) => setField("vehicleNo", v)}
+              placeholder="e.g. MH 12 AB 1234"
+            />
+            <Field
+              label="Vehicle Type"
+              value={meta.vehicleType}
+              onChange={(v) => setField("vehicleType", v)}
+              placeholder="e.g. Tempo / Truck"
+            />
+            <Field
+              label="Chalan No"
+              value={meta.chalanNo}
+              onChange={(v) => setField("chalanNo", v)}
+              placeholder="e.g. CH-00123"
+            />
+            <Field
+              label="Received Date"
+              type="date"
+              value={meta.receivedDate}
+              onChange={(v) => setField("receivedDate", v)}
+            />
+          </div>
+        </section>
+
+
         {/* Add item */}
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-foreground">
@@ -316,7 +425,7 @@ function ReturnsPage() {
             </span>
           </button>
 
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-2">
             <QtyField
               label="Good"
               tone="good"
@@ -324,18 +433,13 @@ function ReturnsPage() {
               onChange={setGoodInput}
             />
             <QtyField
-              label="Repair"
-              tone="repair"
-              value={repairInput}
-              onChange={setRepairInput}
-            />
-            <QtyField
-              label="Rejected"
-              tone="rejected"
-              value={rejectedInput}
-              onChange={setRejectedInput}
+              label="Damaged"
+              tone="damaged"
+              value={damagedInput}
+              onChange={setDamagedInput}
             />
           </div>
+
 
           <button
             type="button"
@@ -397,8 +501,11 @@ function ReturnsPage() {
                     row={row}
                     onChangeQty={(f, v) => updateQty(row.rowId, f, v)}
                     onRemove={() => removeRow(row.rowId)}
+                    onAddImages={(files) => void addImages(row.rowId, files)}
+                    onRemoveImage={(i) => removeImage(row.rowId, i)}
                   />
                 ))}
+
               </ul>
             </div>
           )}
@@ -409,11 +516,11 @@ function ReturnsPage() {
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <div className="flex-1 text-xs text-muted-foreground">
             <div className="font-semibold text-foreground">
-              Good {totals.good} · Repair {totals.repair} · Rejected{" "}
-              {totals.rejected}
+              Good {totals.good} · Damaged {totals.damaged}
             </div>
             <div>{rows.length} rows</div>
           </div>
+
           <button
             type="button"
             onClick={handleExport}
@@ -487,17 +594,13 @@ const TONE_CLASSES = {
       "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/30",
     chip: "bg-emerald-100 text-emerald-800",
   },
-  repair: {
+  damaged: {
     label: "text-amber-700",
     input: "border-amber-300 focus:border-amber-500 focus:ring-amber-500/30",
     chip: "bg-amber-100 text-amber-800",
   },
-  rejected: {
-    label: "text-red-700",
-    input: "border-red-300 focus:border-red-500 focus:ring-red-500/30",
-    chip: "bg-red-100 text-red-800",
-  },
 } as const;
+
 
 type Tone = keyof typeof TONE_CLASSES;
 
@@ -620,12 +723,18 @@ function ReturnRowItem({
   row,
   onChangeQty,
   onRemove,
+  onAddImages,
+  onRemoveImage,
 }: {
   row: ReturnRow;
   onChangeQty: (field: QtyField, value: number) => void;
   onRemove: () => void;
+  onAddImages: (files: FileList | null) => void;
+  onRemoveImage: (index: number) => void;
 }) {
-  const total = row.goodQty + row.repairQty + row.rejectedQty;
+  const total = row.goodQty + row.damagedQty;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const images = row.images ?? [];
   return (
     <li className="px-3 py-3">
       <div className="flex items-start gap-3">
@@ -654,17 +763,57 @@ function ReturnRowItem({
               onChange={(n) => onChangeQty("goodQty", n)}
             />
             <QtyChip
-              label="Repair"
-              tone="repair"
-              value={row.repairQty}
-              onChange={(n) => onChangeQty("repairQty", n)}
+              label="Damaged"
+              tone="damaged"
+              value={row.damagedQty}
+              onChange={(n) => onChangeQty("damagedQty", n)}
             />
-            <QtyChip
-              label="Rejected"
-              tone="rejected"
-              value={row.rejectedQty}
-              onChange={(n) => onChangeQty("rejectedQty", n)}
-            />
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {images.map((src, i) => (
+              <div
+                key={i}
+                className="relative h-14 w-14 overflow-hidden rounded-lg border border-border"
+              >
+                <img
+                  src={src}
+                  alt={`Damaged ${row.name} photo ${i + 1}`}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => onRemoveImage(i)}
+                  aria-label={`Remove photo ${i + 1}`}
+                  className="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-bl-lg bg-destructive text-destructive-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            {images.length < MAX_ROW_IMAGES && (
+              <>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    onAddImages(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-border text-[9px] text-muted-foreground hover:border-primary/50"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  Photo
+                </button>
+              </>
+            )}
           </div>
         </div>
         <button
@@ -679,6 +828,7 @@ function ReturnRowItem({
     </li>
   );
 }
+
 
 function ItemPickerSheet({
   items,

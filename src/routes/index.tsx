@@ -275,7 +275,7 @@ function BomBuilderPage() {
             type="text"
             value={eventName}
             onChange={(e) => setEventName(e.target.value)}
-            placeholder="Event name (e.g. ACME Wedding)"
+            placeholder="Event name (e.g. Commonwealth Games)"
             className="mt-3 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-primary-foreground placeholder:text-primary-foreground/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40"
           />
         </div>

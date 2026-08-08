@@ -26,12 +26,12 @@ export function consolidateForExport(rows: BomRow[]) {
 
 export function exportBomToXlsx(rows: BomRow[], eventName: string) {
   const consolidated = consolidateForExport(rows);
-  const aoa: (string | number)[][] = [["Category Name", "Item Name", "Quantity", "Item Price"]];
+  const aoa: (string | number)[][] = [["Item Name", "Category Name", "Quantity", "Item Price"]];
   for (const r of consolidated) {
-    aoa.push([r.categoryName ?? "", r.name, r.quantity, r.price === null ? "N/A" : r.price]);
+    aoa.push([r.name, r.categoryName ?? "", r.quantity, r.price === null ? "N/A" : r.price]);
   }
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = [{ wch: 24 }, { wch: 38 }, { wch: 12 }, { wch: 14 }];
+  ws["!cols"] = [{ wch: 40 }, { wch: 32 }, { wch: 12 }, { wch: 14 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "BOM");
 

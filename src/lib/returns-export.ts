@@ -5,17 +5,24 @@ export interface ReturnRow {
   itemId: number;
   name: string;
   goodQty: number;
-  repairQty: number;
-  rejectedQty: number;
+  damagedQty: number;
   price: number | null;
   categoryName?: string;
+  /** Data URLs of damaged-item photos (max 3) */
+  images?: string[];
 }
 
 export interface ReturnMeta {
   projectName: string;
   siteLocation: string;
   description: string;
+  vehicleNo: string;
+  vehicleType: string;
+  chalanNo: string;
+  receivedDate: string;
 }
+
+export const MAX_ROW_IMAGES = 3;
 
 function consolidate(rows: ReturnRow[]) {
   const map = new Map<
@@ -23,10 +30,10 @@ function consolidate(rows: ReturnRow[]) {
     {
       name: string;
       goodQty: number;
-      repairQty: number;
-      rejectedQty: number;
+      damagedQty: number;
       price: number | null;
       categoryName?: string;
+      images: string[];
     }
   >();
   for (const r of rows) {
@@ -34,21 +41,31 @@ function consolidate(rows: ReturnRow[]) {
     const existing = map.get(key);
     if (existing) {
       existing.goodQty += r.goodQty;
-      existing.repairQty += r.repairQty;
-      existing.rejectedQty += r.rejectedQty;
+      existing.damagedQty += r.damagedQty;
       if (existing.price === null && r.price !== null) existing.price = r.price;
+      existing.images = [...existing.images, ...(r.images ?? [])].slice(
+        0,
+        MAX_ROW_IMAGES,
+      );
     } else {
       map.set(key, {
         name: r.name,
         goodQty: r.goodQty,
-        repairQty: r.repairQty,
-        rejectedQty: r.rejectedQty,
+        damagedQty: r.damagedQty,
         price: r.price,
         categoryName: r.categoryName,
+        images: (r.images ?? []).slice(0, MAX_ROW_IMAGES),
       });
     }
   }
   return Array.from(map.values());
+}
+
+function parseDataUrl(dataUrl: string) {
+  const match = /^data:image\/(png|jpeg|jpg|gif);base64,(.*)$/i.exec(dataUrl);
+  if (!match) return null;
+  const ext = match[1].toLowerCase() === "jpg" ? "jpeg" : match[1].toLowerCase();
+  return { extension: ext as "png" | "jpeg" | "gif", base64: match[2] };
 }
 
 export async function exportReturnsToXlsx(rows: ReturnRow[], meta: ReturnMeta) {
@@ -60,8 +77,10 @@ export async function exportReturnsToXlsx(rows: ReturnRow[], meta: ReturnMeta) {
     { width: 38 },
     { width: 14 },
     { width: 14 },
-    { width: 12 },
     { width: 14 },
+    { width: 16 },
+    { width: 16 },
+    { width: 16 },
   ];
 
   ws.addRow(["Return Note"]);
@@ -70,6 +89,13 @@ export async function exportReturnsToXlsx(rows: ReturnRow[], meta: ReturnMeta) {
   ws.addRow(["Project / BOM No", meta.projectName]);
   ws.addRow(["Returned Site Location", meta.siteLocation]);
   ws.addRow(["Description", meta.description]);
+  ws.addRow([]);
+  const vh = ws.addRow(["Vehicle Details"]);
+  vh.font = { bold: true };
+  ws.addRow(["Vehicle No", meta.vehicleNo]);
+  ws.addRow(["Vehicle Type", meta.vehicleType]);
+  ws.addRow(["Chalan No", meta.chalanNo]);
+  ws.addRow(["Received Date", meta.receivedDate]);
   ws.addRow(["Date", new Date().toLocaleString()]);
   ws.addRow([]);
 
@@ -77,36 +103,53 @@ export async function exportReturnsToXlsx(rows: ReturnRow[], meta: ReturnMeta) {
     "Category Name",
     "Item Name",
     "Good Condition",
-    "Needs Repair",
-    "Rejected",
+    "Damaged",
     "Item Price",
+    "Image 1",
+    "Image 2",
+    "Image 3",
   ]);
   header.font = { bold: true };
 
   const consolidated = consolidate(rows);
   for (const r of consolidated) {
-    ws.addRow([
+    const row = ws.addRow([
       r.categoryName ?? "",
       r.name,
       r.goodQty,
-      r.repairQty,
-      r.rejectedQty,
+      r.damagedQty,
       r.price === null ? "N/A" : r.price,
     ]);
+
+    const images = r.images.slice(0, MAX_ROW_IMAGES);
+    if (images.length > 0) {
+      row.height = 62;
+      images.forEach((dataUrl, idx) => {
+        const parsed = parseDataUrl(dataUrl);
+        if (!parsed) return;
+        const imageId = wb.addImage({
+          base64: parsed.base64,
+          extension: parsed.extension,
+        });
+        ws.addImage(imageId, {
+          tl: { col: 5 + idx + 0.1, row: row.number - 1 + 0.1 },
+          ext: { width: 90, height: 72 },
+        });
+      });
+    }
   }
 
   // Totals
   const totals = consolidated.reduce(
     (acc, r) => {
       acc.good += r.goodQty;
-      acc.repair += r.repairQty;
-      acc.rejected += r.rejectedQty;
+      acc.damaged += r.damagedQty;
       return acc;
     },
-    { good: 0, repair: 0, rejected: 0 },
+    { good: 0, damaged: 0 },
   );
   ws.addRow([]);
-  const tRow = ws.addRow(["", "Totals", totals.good, totals.repair, totals.rejected, ""]);
+  const tRow = ws.addRow(["", "Totals", totals.good, totals.damaged, ""]);
   tRow.font = { bold: true };
 
   const safeName = (meta.projectName || "Returns")
