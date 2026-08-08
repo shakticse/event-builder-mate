@@ -1,9 +1,17 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ClipboardList, Layers, Package, Undo2 } from "lucide-react";
+import {
+  ClipboardList,
+  LayoutDashboard,
+  Layers,
+  LogOut,
+  Package,
+  Undo2,
+} from "lucide-react";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -13,8 +21,10 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/lib/auth";
 
 const items = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "BOM Builder", url: "/", icon: Package },
   { title: "Gate Pass", url: "/gate-pass", icon: ClipboardList },
   { title: "Return Items", url: "/returns", icon: Undo2 },
@@ -25,6 +35,7 @@ export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const collapsed = state === "collapsed";
+  const { user, logout } = useAuth();
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -67,7 +78,34 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          {user ? (
+            <SidebarMenuItem>
+              <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
+                <p className="truncate text-sm font-medium text-sidebar-foreground">
+                  {user.name || user.email}
+                </p>
+                <p className="truncate text-xs text-sidebar-foreground/70">
+                  {user.role || user.email}
+                </p>
+              </div>
+            </SidebarMenuItem>
+          ) : null}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => {
+                handleLinkClick();
+                logout();
+              }}
+              tooltip={collapsed ? "Log out" : undefined}
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Log out</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
-
