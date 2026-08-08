@@ -4,8 +4,11 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useNavigate,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { Toaster } from "sonner";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -15,6 +18,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { AuthProvider, useAuth } from "@/lib/auth";
 
 function NotFoundComponent() {
   return (
@@ -82,7 +86,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-function RootComponent() {
+function AuthedShell() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isLoginRoute = pathname === "/login";
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user && !isLoginRoute) navigate({ to: "/login" });
+  }, [loading, user, isLoginRoute, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isLoginRoute || !user) {
+    return <Outlet />;
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -92,8 +118,16 @@ function RootComponent() {
           <span className="font-semibold text-foreground">Event Rentals</span>
         </header>
         <Outlet />
-        <Toaster position="top-center" richColors closeButton />
       </SidebarInset>
     </SidebarProvider>
+  );
+}
+
+function RootComponent() {
+  return (
+    <AuthProvider>
+      <AuthedShell />
+      <Toaster position="top-center" richColors closeButton />
+    </AuthProvider>
   );
 }
