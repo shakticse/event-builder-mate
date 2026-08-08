@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StockConsolidationRouteImport } from './routes/stock-consolidation'
 import { Route as ReturnsRouteImport } from './routes/returns'
+import { Route as MeasurementBookRouteImport } from './routes/measurement-book'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GatePassRouteImport } from './routes/gate-pass'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -24,6 +25,11 @@ const StockConsolidationRoute = StockConsolidationRouteImport.update({
 const ReturnsRoute = ReturnsRouteImport.update({
   id: '/returns',
   path: '/returns',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeasurementBookRoute = MeasurementBookRouteImport.update({
+  id: '/measurement-book',
+  path: '/measurement-book',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/gate-pass': typeof GatePassRoute
   '/login': typeof LoginRoute
+  '/measurement-book': typeof MeasurementBookRoute
   '/returns': typeof ReturnsRoute
   '/stock-consolidation': typeof StockConsolidationRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/gate-pass': typeof GatePassRoute
   '/login': typeof LoginRoute
+  '/measurement-book': typeof MeasurementBookRoute
   '/returns': typeof ReturnsRoute
   '/stock-consolidation': typeof StockConsolidationRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/gate-pass': typeof GatePassRoute
   '/login': typeof LoginRoute
+  '/measurement-book': typeof MeasurementBookRoute
   '/returns': typeof ReturnsRoute
   '/stock-consolidation': typeof StockConsolidationRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gate-pass'
     | '/login'
+    | '/measurement-book'
     | '/returns'
     | '/stock-consolidation'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gate-pass'
     | '/login'
+    | '/measurement-book'
     | '/returns'
     | '/stock-consolidation'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gate-pass'
     | '/login'
+    | '/measurement-book'
     | '/returns'
     | '/stock-consolidation'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   GatePassRoute: typeof GatePassRoute
   LoginRoute: typeof LoginRoute
+  MeasurementBookRoute: typeof MeasurementBookRoute
   ReturnsRoute: typeof ReturnsRoute
   StockConsolidationRoute: typeof StockConsolidationRoute
 }
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/returns'
       fullPath: '/returns'
       preLoaderRoute: typeof ReturnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/measurement-book': {
+      id: '/measurement-book'
+      path: '/measurement-book'
+      fullPath: '/measurement-book'
+      preLoaderRoute: typeof MeasurementBookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   GatePassRoute: GatePassRoute,
   LoginRoute: LoginRoute,
+  MeasurementBookRoute: MeasurementBookRoute,
   ReturnsRoute: ReturnsRoute,
   StockConsolidationRoute: StockConsolidationRoute,
 }
