@@ -4,7 +4,9 @@ import {
   Layers,
   LogOut,
   Package,
+  Ruler,
   Undo2,
+
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
@@ -48,7 +50,14 @@ const tiles = [
     url: "/stock-consolidation",
     icon: Layers,
   },
+  {
+    title: "Measurement Book",
+    description: "Capture vendor work done on site with measurements and rates.",
+    url: "/measurement-book",
+    icon: Ruler,
+  },
 ] as const;
+
 
 function DashboardPage() {
   const { user, logout } = useAuth();

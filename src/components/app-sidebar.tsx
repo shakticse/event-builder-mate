@@ -5,7 +5,9 @@ import {
   Layers,
   LogOut,
   Package,
+  Ruler,
   Undo2,
+
 } from "lucide-react";
 
 import {
@@ -29,7 +31,9 @@ const items = [
   { title: "Gate Pass", url: "/gate-pass", icon: ClipboardList },
   { title: "Return Items", url: "/returns", icon: Undo2 },
   { title: "Stock Consolidation", url: "/stock-consolidation", icon: Layers },
+  { title: "Measurement Book", url: "/measurement-book", icon: Ruler },
 ];
+
 
 export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
