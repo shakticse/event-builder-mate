@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StockConsolidationRouteImport } from './routes/stock-consolidation'
 import { Route as ReturnsRouteImport } from './routes/returns'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as GatePassRouteImport } from './routes/gate-pass'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -22,6 +23,11 @@ const StockConsolidationRoute = StockConsolidationRouteImport.update({
 const ReturnsRoute = ReturnsRouteImport.update({
   id: '/returns',
   path: '/returns',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GatePassRoute = GatePassRouteImport.update({
@@ -38,12 +44,14 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/gate-pass': typeof GatePassRoute
+  '/login': typeof LoginRoute
   '/returns': typeof ReturnsRoute
   '/stock-consolidation': typeof StockConsolidationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/gate-pass': typeof GatePassRoute
+  '/login': typeof LoginRoute
   '/returns': typeof ReturnsRoute
   '/stock-consolidation': typeof StockConsolidationRoute
 }
@@ -51,20 +59,28 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/gate-pass': typeof GatePassRoute
+  '/login': typeof LoginRoute
   '/returns': typeof ReturnsRoute
   '/stock-consolidation': typeof StockConsolidationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gate-pass' | '/returns' | '/stock-consolidation'
+  fullPaths: '/' | '/gate-pass' | '/login' | '/returns' | '/stock-consolidation'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/gate-pass' | '/returns' | '/stock-consolidation'
-  id: '__root__' | '/' | '/gate-pass' | '/returns' | '/stock-consolidation'
+  to: '/' | '/gate-pass' | '/login' | '/returns' | '/stock-consolidation'
+  id:
+    | '__root__'
+    | '/'
+    | '/gate-pass'
+    | '/login'
+    | '/returns'
+    | '/stock-consolidation'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GatePassRoute: typeof GatePassRoute
+  LoginRoute: typeof LoginRoute
   ReturnsRoute: typeof ReturnsRoute
   StockConsolidationRoute: typeof StockConsolidationRoute
 }
@@ -83,6 +99,13 @@ declare module '@tanstack/react-router' {
       path: '/returns'
       fullPath: '/returns'
       preLoaderRoute: typeof ReturnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gate-pass': {
@@ -105,6 +128,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GatePassRoute: GatePassRoute,
+  LoginRoute: LoginRoute,
   ReturnsRoute: ReturnsRoute,
   StockConsolidationRoute: StockConsolidationRoute,
 }
