@@ -1,3 +1,4 @@
+import { APP_NAME } from "@/lib/app-config";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -25,13 +26,13 @@ import { apiFetch } from "@/lib/api-client";
 export const Route = createFileRoute("/stock-consolidation")({
   head: () => ({
     meta: [
-      { title: "Stock Consolidation — Event Rentals" },
+      { title: `Stock Consolidation — ${APP_NAME}` },
       {
         name: "description",
         content:
           "Consolidate stock quantities by item and export the list to Excel.",
       },
-      { property: "og:title", content: "Stock Consolidation — Event Rentals" },
+      { property: "og:title", content: `Stock Consolidation — ${APP_NAME}` },
       {
         property: "og:description",
         content:
@@ -215,7 +216,7 @@ function StockConsolidationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b border-border bg-primary text-primary-foreground shadow-sm">
         <div className="mx-auto max-w-2xl px-4 py-3">
           <div className="flex items-center gap-2">
@@ -227,7 +228,7 @@ function StockConsolidationPage() {
                 Stock Consolidation
               </h1>
               <p className="text-xs text-primary-foreground/70 leading-tight">
-                Event Rentals
+                {APP_NAME}
               </p>
             </div>
             <button
@@ -454,7 +455,7 @@ function StockConsolidationPage() {
         </section>
       </main>
 
-      <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <footer className="sticky bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <div className="flex-1">
             <div className="text-xs text-muted-foreground">Total items</div>

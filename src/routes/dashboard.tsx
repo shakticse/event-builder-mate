@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  ClipboardCheck,
   ClipboardList,
+  GitPullRequestArrow,
   Layers,
   LogOut,
   Package,
@@ -9,16 +11,18 @@ import {
 
 } from "lucide-react";
 
+
+import { APP_NAME, APP_DESCRIPTION } from "@/lib/app-config";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Event Rentals" },
+      { title: `Dashboard — ${APP_NAME}` },
       {
         name: "description",
         content:
-          "Your Event Rentals workspace: BOM builder, gate pass, returns and stock consolidation.",
+          APP_DESCRIPTION,
       },
     ],
   }),
@@ -56,7 +60,20 @@ const tiles = [
     url: "/measurement-book",
     icon: Ruler,
   },
+  {
+    title: "Material Receipt Note",
+    description: "Record goods received against a PO with vendor details.",
+    url: "/material-receipt-note",
+    icon: ClipboardCheck,
+  },
+  {
+    title: "Change Request",
+    description: "Log on-site requirement changes and route them for approval.",
+    url: "/change-request",
+    icon: GitPullRequestArrow,
+  },
 ] as const;
+
 
 
 function DashboardPage() {

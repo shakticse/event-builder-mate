@@ -1,3 +1,4 @@
+import { APP_NAME } from "@/lib/app-config";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -28,13 +29,13 @@ import { apiFetch } from "@/lib/api-client";
 export const Route = createFileRoute("/returns")({
   head: () => ({
     meta: [
-      { title: "Return Items — Event Rentals" },
+      { title: `Return Items — ${APP_NAME}` },
       {
         name: "description",
         content:
           "Record returned rental items with vehicle details and split quantities by Good and Damaged.",
       },
-      { property: "og:title", content: "Return Items — Event Rentals" },
+      { property: "og:title", content: `Return Items — ${APP_NAME}` },
       {
         property: "og:description",
         content:
@@ -306,7 +307,7 @@ function ReturnsPage() {
 
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b border-border bg-primary text-primary-foreground shadow-sm">
         <div className="mx-auto max-w-2xl px-4 py-3">
           <div className="flex items-center gap-2">
@@ -316,7 +317,7 @@ function ReturnsPage() {
             <div className="flex-1">
               <h1 className="text-base font-bold leading-tight">Return Items</h1>
               <p className="text-xs text-primary-foreground/70 leading-tight">
-                Event Rentals
+                {APP_NAME}
               </p>
             </div>
             <button
@@ -512,7 +513,7 @@ function ReturnsPage() {
         </section>
       </main>
 
-      <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <footer className="sticky bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <div className="flex-1 text-xs text-muted-foreground">
             <div className="font-semibold text-foreground">

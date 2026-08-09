@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StockConsolidationRouteImport } from './routes/stock-consolidation'
 import { Route as ReturnsRouteImport } from './routes/returns'
 import { Route as MeasurementBookRouteImport } from './routes/measurement-book'
+import { Route as MaterialReceiptNoteRouteImport } from './routes/material-receipt-note'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GatePassRouteImport } from './routes/gate-pass'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ChangeRequestRouteImport } from './routes/change-request'
 import { Route as IndexRouteImport } from './routes/index'
 
 const StockConsolidationRoute = StockConsolidationRouteImport.update({
@@ -32,6 +34,11 @@ const MeasurementBookRoute = MeasurementBookRouteImport.update({
   path: '/measurement-book',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MaterialReceiptNoteRoute = MaterialReceiptNoteRouteImport.update({
+  id: '/material-receipt-note',
+  path: '/material-receipt-note',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -47,6 +54,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChangeRequestRoute = ChangeRequestRouteImport.update({
+  id: '/change-request',
+  path: '/change-request',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -55,18 +67,22 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/change-request': typeof ChangeRequestRoute
   '/dashboard': typeof DashboardRoute
   '/gate-pass': typeof GatePassRoute
   '/login': typeof LoginRoute
+  '/material-receipt-note': typeof MaterialReceiptNoteRoute
   '/measurement-book': typeof MeasurementBookRoute
   '/returns': typeof ReturnsRoute
   '/stock-consolidation': typeof StockConsolidationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/change-request': typeof ChangeRequestRoute
   '/dashboard': typeof DashboardRoute
   '/gate-pass': typeof GatePassRoute
   '/login': typeof LoginRoute
+  '/material-receipt-note': typeof MaterialReceiptNoteRoute
   '/measurement-book': typeof MeasurementBookRoute
   '/returns': typeof ReturnsRoute
   '/stock-consolidation': typeof StockConsolidationRoute
@@ -74,9 +90,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/change-request': typeof ChangeRequestRoute
   '/dashboard': typeof DashboardRoute
   '/gate-pass': typeof GatePassRoute
   '/login': typeof LoginRoute
+  '/material-receipt-note': typeof MaterialReceiptNoteRoute
   '/measurement-book': typeof MeasurementBookRoute
   '/returns': typeof ReturnsRoute
   '/stock-consolidation': typeof StockConsolidationRoute
@@ -85,27 +103,33 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/change-request'
     | '/dashboard'
     | '/gate-pass'
     | '/login'
+    | '/material-receipt-note'
     | '/measurement-book'
     | '/returns'
     | '/stock-consolidation'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/change-request'
     | '/dashboard'
     | '/gate-pass'
     | '/login'
+    | '/material-receipt-note'
     | '/measurement-book'
     | '/returns'
     | '/stock-consolidation'
   id:
     | '__root__'
     | '/'
+    | '/change-request'
     | '/dashboard'
     | '/gate-pass'
     | '/login'
+    | '/material-receipt-note'
     | '/measurement-book'
     | '/returns'
     | '/stock-consolidation'
@@ -113,9 +137,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChangeRequestRoute: typeof ChangeRequestRoute
   DashboardRoute: typeof DashboardRoute
   GatePassRoute: typeof GatePassRoute
   LoginRoute: typeof LoginRoute
+  MaterialReceiptNoteRoute: typeof MaterialReceiptNoteRoute
   MeasurementBookRoute: typeof MeasurementBookRoute
   ReturnsRoute: typeof ReturnsRoute
   StockConsolidationRoute: typeof StockConsolidationRoute
@@ -144,6 +170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeasurementBookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/material-receipt-note': {
+      id: '/material-receipt-note'
+      path: '/material-receipt-note'
+      fullPath: '/material-receipt-note'
+      preLoaderRoute: typeof MaterialReceiptNoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -165,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/change-request': {
+      id: '/change-request'
+      path: '/change-request'
+      fullPath: '/change-request'
+      preLoaderRoute: typeof ChangeRequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -177,9 +217,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChangeRequestRoute: ChangeRequestRoute,
   DashboardRoute: DashboardRoute,
   GatePassRoute: GatePassRoute,
   LoginRoute: LoginRoute,
+  MaterialReceiptNoteRoute: MaterialReceiptNoteRoute,
   MeasurementBookRoute: MeasurementBookRoute,
   ReturnsRoute: ReturnsRoute,
   StockConsolidationRoute: StockConsolidationRoute,

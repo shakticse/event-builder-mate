@@ -1,6 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  ClipboardCheck,
   ClipboardList,
+  GitPullRequestArrow,
   LayoutDashboard,
   Layers,
   LogOut,
@@ -9,6 +11,7 @@ import {
   Undo2,
 
 } from "lucide-react";
+
 
 import {
   Sidebar,
@@ -23,6 +26,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { APP_NAME } from "@/lib/app-config";
 import { useAuth } from "@/lib/auth";
 
 const items = [
@@ -32,8 +36,9 @@ const items = [
   { title: "Return Items", url: "/returns", icon: Undo2 },
   { title: "Stock Consolidation", url: "/stock-consolidation", icon: Layers },
   { title: "Measurement Book", url: "/measurement-book", icon: Ruler },
+  { title: "Material Receipt Note", url: "/material-receipt-note", icon: ClipboardCheck },
+  { title: "Change Request", url: "/change-request", icon: GitPullRequestArrow },
 ];
-
 
 export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
@@ -53,7 +58,7 @@ export function AppSidebar() {
         <div className="flex h-12 items-center px-2">
           <Package className="h-5 w-5 shrink-0 text-sidebar-primary" />
           <span className="ml-2 truncate font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            Event Rentals
+            {APP_NAME}
           </span>
         </div>
       </SidebarHeader>

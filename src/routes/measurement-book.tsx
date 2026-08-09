@@ -1,9 +1,11 @@
+import { APP_NAME } from "@/lib/app-config";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertCircle,
   ClipboardCheck,
+  FileSpreadsheet,
   Loader2,
   Plus,
   RefreshCw,
@@ -25,11 +27,13 @@ import {
   type ProjectApi,
   type ProjectServiceApi,
 } from "@/lib/measurement-book";
+import { exportMeasurementBookToXlsx } from "@/lib/measurement-book-export";
+
 
 export const Route = createFileRoute("/measurement-book")({
   head: () => ({
     meta: [
-      { title: "Measurement Book — Event Rentals" },
+      { title: `Measurement Book — ${APP_NAME}` },
       {
         name: "description",
         content:
@@ -57,6 +61,7 @@ function MeasurementBookPage() {
 
   const [projectId, setProjectId] = useState("");
   const [entries, setEntries] = useState<MbEntry[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   const [showPicker, setShowPicker] = useState(false);
   const [search, setSearch] = useState("");
@@ -208,8 +213,28 @@ function MeasurementBookPage() {
       prev.map((e) => (e.rowId === rowId ? { ...e, status: s } : e)),
     );
 
+  const handleExport = async () => {
+    if (entries.length === 0) return;
+    const projectName =
+      projects.find((p) => String(p.id) === projectId)?.projectName ?? "";
+    if (!projectName) {
+      toast.error("Please select a project");
+      return;
+    }
+    setExporting(true);
+    try {
+      const file = await exportMeasurementBookToXlsx(entries, { projectName });
+      toast.success(`Exported ${file}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background pb-10">
+    <div className="min-h-screen bg-background">
+
       <header className="sticky top-0 z-20 border-b border-border bg-primary text-primary-foreground shadow-sm">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
@@ -528,6 +553,33 @@ function MeasurementBookPage() {
           )}
         </section>
       </main>
+
+      <footer className="sticky bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
+          <div className="flex-1 text-xs text-muted-foreground">
+            <div className="font-semibold text-foreground">
+              {summary.count} {summary.count === 1 ? "entry" : "entries"}
+            </div>
+            <div>Total {formatMoney(summary.total)}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleExport()}
+            disabled={entries.length === 0 || exporting}
+            title={entries.length === 0 ? "Add entries first" : "Submit & export"}
+            className="flex h-12 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-accent-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+          >
+            {exporting ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-5 w-5" />
+            )}
+            Submit & Export
+          </button>
+        </div>
+      </footer>
+
+
 
       {showPicker && (
         <ServicePickerSheet
