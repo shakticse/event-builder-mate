@@ -26,7 +26,7 @@ import {
   type GatePassPhoto,
 } from "@/lib/gate-pass-export";
 import { cn } from "@/lib/utils";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, isSessionExpired, SESSION_TIMED_OUT } from "@/lib/api-client";
 
 export const Route = createFileRoute("/gate-pass")({
   head: () => ({
@@ -110,14 +110,16 @@ function GatePassPage() {
       const res = await apiFetch(API_URL);
       if (!res.ok) {
         throw new Error(
-          res.status === 401
-            ? "Authentication required (401)."
-            : `Failed to load items (${res.status})`,
+            `Failed to load items (${res.status})`,
         );
       }
       const data = (await res.json()) as BomApiItem[];
       setItems(Array.isArray(data) ? data : []);
     } catch (e) {
+      if (isSessionExpired(e)) {
+        setError(SESSION_TIMED_OUT);
+        return;
+      }
       const msg = e instanceof Error ? e.message : "Failed to load items";
       setError(msg);
       toast.error(msg);

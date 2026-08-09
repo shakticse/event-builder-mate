@@ -26,6 +26,21 @@ export function setStoredToken(token: string | null) {
   }
 }
 
+export const SESSION_TIMED_OUT = "Session timed out. Please sign in again.";
+
+export class SessionExpiredError extends Error {
+  constructor() {
+    super(SESSION_TIMED_OUT);
+    this.name = "SessionExpiredError";
+  }
+}
+
+export function isSessionExpired(e: unknown): boolean {
+  return e instanceof SessionExpiredError;
+}
+
+let redirecting = false;
+
 function redirectToLogin() {
   if (typeof window === "undefined") return;
   setStoredToken(null);
@@ -34,9 +49,13 @@ function redirectToLogin() {
   } catch {
     /* ignore */
   }
+  if (redirecting) return;
+  redirecting = true;
   if (!window.location.hash.startsWith("#/login")) {
     window.location.hash = "#/login";
     window.location.reload();
+  } else {
+    redirecting = false;
   }
 }
 
@@ -53,7 +72,7 @@ export async function apiFetch(
 
   if (!token) {
     redirectToLogin();
-    throw new Error("Not authenticated");
+    throw new SessionExpiredError();
   }
 
   const res = await fetch(url, {
@@ -67,9 +86,10 @@ export async function apiFetch(
 
   if (res.status === 401) {
     redirectToLogin();
-    throw new Error("Session expired. Please sign in again.");
+    throw new SessionExpiredError();
   }
 
   return res;
 }
+
 
