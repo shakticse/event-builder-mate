@@ -26,8 +26,23 @@ export function setStoredToken(token: string | null) {
   }
 }
 
+function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  setStoredToken(null);
+  try {
+    window.localStorage.removeItem("projecthub.user");
+  } catch {
+    /* ignore */
+  }
+  if (!window.location.hash.startsWith("#/login")) {
+    window.location.hash = "#/login";
+    window.location.reload();
+  }
+}
+
 /**
  * Fetch a path on the ProjectHub API with the bearer token attached.
+ * Any 401 (or a missing token) sends the user back to the login page.
  */
 export async function apiFetch(
   path: string,
@@ -36,12 +51,25 @@ export async function apiFetch(
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const token = getStoredToken();
 
-  return fetch(url, {
+  if (!token) {
+    redirectToLogin();
+    throw new Error("Not authenticated");
+  }
+
+  const res = await fetch(url, {
     ...init,
     headers: {
       Accept: "application/json",
       ...(init.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
     },
   });
+
+  if (res.status === 401) {
+    redirectToLogin();
+    throw new Error("Session expired. Please sign in again.");
+  }
+
+  return res;
 }
+
