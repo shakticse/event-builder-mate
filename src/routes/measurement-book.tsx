@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, isSessionExpired, SESSION_TIMED_OUT } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import {
   computeQuantity,
@@ -88,9 +88,7 @@ function MeasurementBookPage() {
       ]);
       if (!pRes.ok || !sRes.ok) {
         throw new Error(
-          pRes.status === 401 || sRes.status === 401
-            ? "Authentication required (401)."
-            : `Failed to load data (${!pRes.ok ? pRes.status : sRes.status})`,
+          `Failed to load data (${!pRes.ok ? pRes.status : sRes.status})`,
         );
       }
       const p = (await pRes.json()) as ProjectApi[];
@@ -98,6 +96,10 @@ function MeasurementBookPage() {
       setProjects(Array.isArray(p) ? p : []);
       setServices(Array.isArray(s) ? s : []);
     } catch (e) {
+      if (isSessionExpired(e)) {
+        setError(SESSION_TIMED_OUT);
+        return;
+      }
       const msg = e instanceof Error ? e.message : "Failed to load data";
       setError(msg);
       toast.error(msg);
