@@ -1,11 +1,12 @@
 import { APP_NAME } from "@/lib/app-config";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
   Eye,
   Package,
+  Plus,
   RefreshCw,
   AlertCircle,
   Loader2,
@@ -134,6 +135,15 @@ function BomBuilderPage() {
                 {APP_NAME}
               </p>
             </div>
+            {view === "list" && (
+              <Link
+                to="/bom-create"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-accent-foreground shadow-sm"
+              >
+                <Plus className="h-4 w-4" />
+                Create BOM
+              </Link>
+            )}
             {view === "list" && (
               <button
                 onClick={() => void fetchBoms()}

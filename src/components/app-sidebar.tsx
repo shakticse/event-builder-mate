@@ -7,6 +7,7 @@ import {
   Layers,
   LogOut,
   Package,
+  PackagePlus,
   Ruler,
   Undo2,
 
@@ -32,6 +33,7 @@ import { useAuth } from "@/lib/auth";
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "BOM Builder", url: "/", icon: Package },
+  { title: "Create BOM", url: "/bom-create", icon: PackagePlus },
   { title: "Gate Pass", url: "/gate-pass", icon: ClipboardList },
   { title: "Return Items", url: "/returns", icon: Undo2 },
   { title: "Stock Consolidation", url: "/stock-consolidation", icon: Layers },
