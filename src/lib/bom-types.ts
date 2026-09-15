@@ -17,6 +17,38 @@ export interface BomApiItem {
   childItems?: ChildItem[];
 }
 
+export interface BomListItem {
+  id: number;
+  projectId: number;
+  projectName: string;
+  dueDate: string | null;
+  createdDate: string;
+  updatedDate: string | null;
+  description: string;
+  createdByEmail: string | null;
+  createdByUser: string | null;
+  updatedByUser: string | null;
+  createdBy: string | null;
+  updatedBy: string | null;
+  items?: BomDetailItem[];
+}
+
+export interface BomDetailItem {
+  id: number;
+  parentId: number | null;
+  isGroupedItem: boolean;
+  itemType: string;
+  bomId: number;
+  itemId: number;
+  itemName: string;
+  unit: string | null;
+  qty: number;
+  allottedQty: number | null;
+  purchasedQty: number | null;
+  fabricationQty: number | null;
+}
+
+
 
 export interface BomRow {
   /** stable row id (uuid) */
