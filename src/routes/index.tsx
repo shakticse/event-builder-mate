@@ -1,29 +1,18 @@
 import { APP_NAME } from "@/lib/app-config";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  Search,
-  Plus,
-  Trash2,
+  ArrowLeft,
+  Eye,
   Package,
-  Layers,
-  FileSpreadsheet,
-  Minus,
   RefreshCw,
   AlertCircle,
   Loader2,
-  Pencil,
 } from "lucide-react";
-import {
-  evalExpression,
-  type BomApiItem,
-  type BomRow,
-} from "@/lib/bom-types";
-import { exportBomToXlsx } from "@/lib/bom-export";
+import { type BomListItem, type BomDetailItem } from "@/lib/bom-types";
 import { cn } from "@/lib/utils";
 import { apiFetch, isSessionExpired, SESSION_TIMED_OUT } from "@/lib/api-client";
-
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,62 +21,47 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Build, edit and export a Bill of Materials for any event rental job in seconds.",
+          "View bills of materials and their items for any event rental job.",
       },
       { property: "og:title", content: `BOM Builder — ${APP_NAME}` },
       {
         property: "og:description",
         content:
-          "Build, edit and export a Bill of Materials for any event rental job in seconds.",
+          "View bills of materials and their items for any event rental job.",
       },
     ],
   }),
   component: BomBuilderPage,
 });
 
-const API_URL = "/api/items/bomitems";
-
-function uid() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
-function formatPrice(p: number | null) {
-  if (p === null || p === undefined) return "N/A";
-  return `₹${p.toLocaleString()}`;
-}
+const LIST_API = "/api/bom";
 
 function BomBuilderPage() {
-  const [items, setItems] = useState<BomApiItem[]>([]);
+  const [boms, setBoms] = useState<BomListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [eventName, setEventName] = useState("");
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<BomApiItem | null>(null);
-  const [qtyInput, setQtyInput] = useState<string>("1");
-  const [showPicker, setShowPicker] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [view, setView] = useState<"list" | "detail">("list");
+  const [selectedBom, setSelectedBom] = useState<BomListItem | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
-  const [rows, setRows] = useState<BomRow[]>([]);
-
-  const fetchItems = async () => {
+  const fetchBoms = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(API_URL);
+      const res = await apiFetch(LIST_API);
       if (!res.ok) {
-        throw new Error(
-            `Failed to load items (${res.status})`,
-        );
+        throw new Error(`Failed to load BOMs (${res.status})`);
       }
-      const data = (await res.json()) as BomApiItem[];
-      setItems(Array.isArray(data) ? data : []);
+      const data = (await res.json()) as BomListItem[];
+      setBoms(Array.isArray(data) ? data : []);
     } catch (e) {
       if (isSessionExpired(e)) {
         setError(SESSION_TIMED_OUT);
         return;
       }
-      const msg = e instanceof Error ? e.message : "Failed to load items";
+      const msg = e instanceof Error ? e.message : "Failed to load BOMs";
       setError(msg);
       toast.error(msg);
     } finally {
@@ -96,648 +70,337 @@ function BomBuilderPage() {
   };
 
   useEffect(() => {
-    void fetchItems();
+    void fetchBoms();
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return items.slice(0, 50);
-    return items.filter((i) => i.name.toLowerCase().includes(q)).slice(0, 50);
-  }, [items, search]);
-
-  const handleAdd = () => {
-    if (!selected) {
-      toast.error("Pick an item first");
-      return;
-    }
-    const qty = Number(qtyInput);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      toast.error("Quantity must be greater than 0");
-      return;
-    }
-
-    setAdding(true);
+  const openDetail = async (bom: BomListItem) => {
+    setSelectedBom(bom);
+    setView("detail");
+    setDetailLoading(true);
+    setDetailError(null);
     try {
-      if (selected.isGroupedItem && selected.childItems?.length) {
-        const groupInstanceId = uid();
-        const newRows: BomRow[] = selected.childItems.map((c) => {
-          let finalQty = qty;
-          try {
-            finalQty = evalExpression(c.expression, qty, c.perunit);
-          } catch {
-            finalQty = qty * c.perunit;
-          }
-          return {
-            rowId: uid(),
-            itemId: c.id,
-            name: c.name,
-            quantity: finalQty,
-            price: c.price,
-            groupInstanceId,
-            groupName: selected.name,
-            groupQty: qty,
-            expression: c.expression,
-            perunit: c.perunit,
-            categoryName: c.categoryName ?? selected.categoryName,
-            standalone: false,
-          };
-        });
-        setRows((prev) => [...newRows, ...prev]);
-        toast.success(
-          `Added ${newRows.length} items from "${selected.name}"`,
-        );
-      } else {
-        // Standalone — if already exists, increment qty
-        const existingIdx = rows.findIndex(
-          (r) => r.standalone && r.itemId === selected.id,
-        );
-        if (existingIdx >= 0) {
-          setRows((prev) => {
-            const existing = prev[existingIdx];
-            const updated = { ...existing, quantity: existing.quantity + qty };
-            return [updated, ...prev.filter((_, i) => i !== existingIdx)];
-          });
-          toast.message(`Incremented "${selected.name}" by ${qty}`);
-        } else {
-          setRows((prev) => [
-            {
-              rowId: uid(),
-              itemId: selected.id,
-              name: selected.name,
-              quantity: qty,
-              price: selected.itemPrice,
-              categoryName: selected.categoryName,
-              standalone: true,
-            },
-            ...prev,
-          ]);
-          toast.success(`Added "${selected.name}"`);
-        }
+      const res = await apiFetch(`/api/bom/${bom.id}`);
+      if (!res.ok) {
+        throw new Error(`Failed to load BOM details (${res.status})`);
       }
-      setSelected(null);
-      setSearch("");
-      setQtyInput("1");
-      setShowPicker(false);
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const updateRowQty = (rowId: string, next: number) => {
-    if (!Number.isFinite(next) || next <= 0) return;
-    setRows((prev) =>
-      prev.map((r) => (r.rowId === rowId ? { ...r, quantity: next } : r)),
-    );
-  };
-
-  const updateGroupQty = (groupInstanceId: string, nextQty: number) => {
-    if (!Number.isFinite(nextQty) || nextQty <= 0) return;
-    setRows((prev) =>
-      prev.map((r) => {
-        if (r.groupInstanceId !== groupInstanceId) return r;
-        let q = r.quantity;
-        if (r.expression && typeof r.perunit === "number") {
-          try {
-            q = evalExpression(r.expression, nextQty, r.perunit);
-          } catch {
-            q = nextQty * r.perunit;
-          }
-        }
-        return { ...r, quantity: q, groupQty: nextQty };
-      }),
-    );
-  };
-
-  const removeRow = (row: BomRow) => {
-    if (row.groupInstanceId) {
-      const groupRows = rows.filter(
-        (r) => r.groupInstanceId === row.groupInstanceId,
-      );
-      const ok = window.confirm(
-        `Remove all ${groupRows.length} items from group "${row.groupName}"?`,
-      );
-      if (!ok) return;
-      setRows((prev) =>
-        prev.filter((r) => r.groupInstanceId !== row.groupInstanceId),
-      );
-      toast.success("Group removed");
-    } else {
-      setRows((prev) => prev.filter((r) => r.rowId !== row.rowId));
-    }
-  };
-
-  const handleExport = () => {
-    if (rows.length === 0) return;
-    try {
-      const file = exportBomToXlsx(rows, eventName.trim() || "Event");
-      toast.success(`Exported ${file}`);
+      const data = (await res.json()) as BomListItem;
+      setSelectedBom(data);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Export failed");
+      if (isSessionExpired(e)) {
+        setDetailError(SESSION_TIMED_OUT);
+        return;
+      }
+      const msg =
+        e instanceof Error ? e.message : "Failed to load BOM details";
+      setDetailError(msg);
+      toast.error(msg);
+    } finally {
+      setDetailLoading(false);
     }
   };
 
-  // Group rows together visually
-  const grouped = useMemo(() => {
-    const order: string[] = [];
-    const map = new Map<string, BomRow[]>();
-    for (const r of rows) {
-      const key = r.groupInstanceId ?? `__solo_${r.rowId}`;
-      if (!map.has(key)) {
-        order.push(key);
-        map.set(key, []);
-      }
-      map.get(key)!.push(r);
-    }
-    return order.map((k) => ({ key: k, rows: map.get(k)! }));
-  }, [rows]);
+  const backToList = () => {
+    setView("list");
+    setSelectedBom(null);
+    setDetailError(null);
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-20 border-b border-border bg-primary text-primary-foreground shadow-sm">
-        <div className="mx-auto max-w-2xl px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <Package className="h-5 w-5" />
-            </div>
+        <div className="mx-auto max-w-3xl px-4 py-3">
+          <div className="flex items-center gap-3">
+            {view === "detail" ? (
+              <button
+                type="button"
+                onClick={backToList}
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground"
+                aria-label="Back to BOM list"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                <Package className="h-5 w-5" />
+              </div>
+            )}
             <div className="flex-1">
-              <h1 className="text-base font-bold leading-tight">BOM Builder</h1>
+              <h1 className="text-base font-bold leading-tight">
+                {view === "detail" && selectedBom
+                  ? selectedBom.projectName || `BOM #${selectedBom.id}`
+                  : "BOM Builder"}
+              </h1>
               <p className="text-xs text-primary-foreground/70 leading-tight">
                 {APP_NAME}
               </p>
             </div>
-            <button
-              onClick={() => void fetchItems()}
-              className="rounded-md p-2 text-primary-foreground/80 hover:bg-white/10 active:bg-white/20"
-              aria-label="Refresh items"
-            >
-              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-            </button>
+            {view === "list" && (
+              <button
+                onClick={() => void fetchBoms()}
+                className="rounded-md p-2 text-primary-foreground/80 hover:bg-white/10 active:bg-white/20"
+                aria-label="Refresh BOMs"
+              >
+                <RefreshCw
+                  className={cn("h-4 w-4", loading && "animate-spin")}
+                />
+              </button>
+            )}
           </div>
-          <input
-            type="text"
-            value={eventName}
-            onChange={(e) => setEventName(e.target.value)}
-            placeholder="Event name (e.g. Commonwealth Games)"
-            className="mt-3 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-primary-foreground placeholder:text-primary-foreground/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40"
-          />
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-4 space-y-4">
-        {/* Add-item card */}
-        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">
-            Add an item
-          </h2>
+      <main className="mx-auto max-w-3xl px-4 py-4">
+        {view === "list" ? (
+          <BomListView
+            boms={boms}
+            loading={loading}
+            error={error}
+            onRetry={fetchBoms}
+            onView={openDetail}
+          />
+        ) : (
+          <BomDetailView
+            bom={selectedBom}
+            loading={detailLoading}
+            error={detailError}
+            onRetry={() => selectedBom && void openDetail(selectedBom)}
+          />
+        )}
+      </main>
+    </div>
+  );
+}
 
-          {/* Picker trigger */}
-          <button
-            type="button"
-            onClick={() => setShowPicker(true)}
-            disabled={loading && items.length === 0}
-            className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-3 text-left text-sm hover:border-primary/40 disabled:opacity-50"
-          >
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <span className="flex-1 truncate">
-              {selected ? (
-                <span className="font-medium text-foreground">
-                  {selected.name}
-                </span>
-              ) : (
-                <span className="text-muted-foreground">
-                  {loading
-                    ? "Loading items…"
-                    : "Search & select an item"}
-                </span>
-              )}
-            </span>
-            {selected?.isGroupedItem && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
-                <Layers className="h-3 w-3" />
-                Group
-              </span>
-            )}
+function BomListView({
+  boms,
+  loading,
+  error,
+  onRetry,
+  onView,
+}: {
+  boms: BomListItem[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  onView: (bom: BomListItem) => void;
+}) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground">
+          Bills of Materials
+        </h2>
+        <span className="text-xs text-muted-foreground">
+          {boms.length} {boms.length === 1 ? "BOM" : "BOMs"}
+        </span>
+      </div>
+
+      {loading && boms.length === 0 && (
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-14 animate-pulse rounded-xl bg-muted" />
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <div className="flex-1">{error}</div>
+          <button onClick={() => void onRetry()} className="font-semibold underline">
+            Retry
           </button>
+        </div>
+      )}
 
-          {/* Qty + Add */}
-          <div className="mt-3 flex items-center gap-2">
-            <div className="flex items-center rounded-lg border border-input bg-background">
-              <button
-                type="button"
-                onClick={() =>
-                  setQtyInput((q) => String(Math.max(1, (Number(q) || 1) - 1)))
-                }
-                className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
-                aria-label="Decrease"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                value={qtyInput}
-                onChange={(e) => setQtyInput(e.target.value)}
-                className="h-11 w-16 border-0 bg-transparent text-center text-base font-semibold text-foreground focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  setQtyInput((q) => String((Number(q) || 0) + 1))
-                }
-                className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
-                aria-label="Increase"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={!selected || adding}
-              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:opacity-50"
-            >
-              {adding ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
-              Add to BOM
-            </button>
-          </div>
+      {!loading && !error && boms.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+          <Package className="mx-auto h-10 w-10 text-muted-foreground/50" />
+          <p className="mt-3 text-sm font-medium text-foreground">No BOMs found</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Add a BOM from the ProjectHub system to see it here.
+          </p>
+        </div>
+      )}
 
-          {error && (
-            <div className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <div className="flex-1">{error}</div>
-              <button
-                onClick={() => void fetchItems()}
-                className="font-semibold underline"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-        </section>
-
-        {/* BOM list */}
-        <section>
-          <div className="mb-2 flex items-center justify-between px-1">
-            <h2 className="text-sm font-semibold text-foreground">
-              Bill of Materials
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              {rows.length} {rows.length === 1 ? "item" : "items"}
-            </span>
-          </div>
-
-          {loading && rows.length === 0 && (
-            <div className="space-y-2">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="h-20 animate-pulse rounded-xl bg-muted"
-                />
-              ))}
-            </div>
-          )}
-
-          {!loading && rows.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
-              <Package className="mx-auto h-10 w-10 text-muted-foreground/50" />
-              <p className="mt-3 text-sm font-medium text-foreground">
-                No items added yet
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Search above to get started.
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            {grouped.map(({ key, rows: groupRows }) => {
-              const first = groupRows[0];
-              const isGroup = !!first.groupInstanceId;
-              return (
-                <div
-                  key={key}
-                  className={cn(
-                    "rounded-2xl border bg-card shadow-sm overflow-hidden",
-                    isGroup
-                      ? "border-accent/40"
-                      : "border-border",
-                  )}
-                >
-                  {isGroup && (
-                    <div className="flex items-center gap-2 border-b border-accent/30 bg-accent/10 px-3 py-2">
-                      <Layers className="h-3.5 w-3.5 text-accent-foreground" />
-                      <span className="truncate text-xs font-semibold text-accent-foreground">
-                        {first.groupName}
-                      </span>
-                      <span className="ml-auto text-[10px] text-muted-foreground">
-                        {groupRows.length} sub-items
-                      </span>
-                      <GroupQtyEditor
-                        value={first.groupQty ?? 1}
-                        onChange={(n) =>
-                          updateGroupQty(first.groupInstanceId!, n)
-                        }
-                      />
+      {boms.length > 0 && (
+        <>
+          {/* Desktop table */}
+          <div className="hidden overflow-hidden rounded-xl border border-border sm:block">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-muted/60 text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium">Id</th>
+                  <th className="px-4 py-2.5 font-medium">Project Name</th>
+                  <th className="px-4 py-2.5 font-medium">Created By</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {boms.map((bom) => (
+                  <tr
+                    key={bom.id}
+                    className="bg-card hover:bg-accent/5 transition-colors"
+                  >
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      {bom.id}
+                    </td>
+                    <td className="px-4 py-3 text-foreground">
+                      {bom.projectName || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {bom.createdByUser?.trim() || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
                       <button
                         type="button"
-                        onClick={() => removeRow(first)}
-                        aria-label={`Delete group ${first.groupName}`}
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 active:bg-destructive/20"
+                        onClick={() => onView(bom)}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20"
+                        aria-label={`View BOM ${bom.id}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Eye className="h-3.5 w-3.5 text-primary" />
+                        View
                       </button>
-                    </div>
-                  )}
-                  <ul className="divide-y divide-border">
-                    {groupRows.map((row) => (
-                      <BomRowItem
-                        key={row.rowId}
-                        row={row}
-                        onChangeQty={(n) => updateRowQty(row.rowId, n)}
-                        onRemove={() => removeRow(row)}
-                      />
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </section>
-      </main>
 
-      {/* Sticky export footer */}
-      <footer className="sticky bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
-          <div className="flex-1">
-            <div className="text-xs text-muted-foreground">Total items</div>
-            <div className="text-base font-bold text-foreground">
-              {rows.reduce((a, r) => a + r.quantity, 0)}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">
-                ({rows.length} rows)
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={rows.length === 0}
-            title={rows.length === 0 ? "Add items first" : "Export to Excel"}
-            className="flex h-12 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-accent-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
-          >
-            <FileSpreadsheet className="h-5 w-5" />
-            Export Excel
-          </button>
-        </div>
-      </footer>
-
-      {/* Item picker sheet */}
-      {showPicker && (
-        <ItemPickerSheet
-          items={filtered}
-          loading={loading}
-          search={search}
-          onSearch={setSearch}
-          onPick={(it) => {
-            setSelected(it);
-            setShowPicker(false);
-          }}
-          onClose={() => setShowPicker(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-function BomRowItem({
-  row,
-  onChangeQty,
-  onRemove,
-}: {
-  row: BomRow;
-  onChangeQty: (n: number) => void;
-  onRemove: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState(String(row.quantity));
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editing) inputRef.current?.focus();
-  }, [editing]);
-
-  const commit = () => {
-    const n = Number(val);
-    if (Number.isFinite(n) && n > 0) onChangeQty(n);
-    else setVal(String(row.quantity));
-    setEditing(false);
-  };
-
-  return (
-    <li className="flex items-center gap-3 px-3 py-3">
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-foreground">
-          {row.name}
-        </div>
-        <div className="mt-1 flex items-center gap-2">
-          {editing ? (
-            <input
-              ref={inputRef}
-              type="number"
-              inputMode="numeric"
-              value={val}
-              onChange={(e) => setVal(e.target.value)}
-              onBlur={commit}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commit();
-              }}
-              className="w-20 rounded-md border border-input bg-background px-2 py-1 text-xs"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setVal(String(row.quantity));
-                setEditing(true);
-              }}
-              aria-label="Edit quantity"
-              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm hover:border-primary/40 hover:bg-accent/10 active:bg-accent/20"
-            >
-              <span className="text-muted-foreground">Qty:</span>
-              {row.quantity}
-              <Pencil className="h-3 w-3 text-muted-foreground" />
-            </button>
-          )}
-          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-            {formatPrice(row.price)}
-          </span>
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label="Remove"
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-destructive hover:bg-destructive/10"
-      >
-        <Trash2 className="h-5 w-5" />
-      </button>
-    </li>
-  );
-}
-
-function ItemPickerSheet({
-  items,
-  loading,
-  search,
-  onSearch,
-  onPick,
-  onClose,
-}: {
-  items: BomApiItem[];
-  loading: boolean;
-  search: string;
-  onSearch: (s: string) => void;
-  onPick: (it: BomApiItem) => void;
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <div className="flex items-center gap-2 border-b border-border bg-card px-3 py-3">
-        <Search className="h-4 w-4 text-muted-foreground" />
-        <input
-          autoFocus
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search items…"
-          className="flex-1 bg-transparent text-sm focus:outline-none"
-        />
-        <button
-          onClick={onClose}
-          className="rounded-md px-3 py-1.5 text-sm font-semibold text-primary"
-        >
-          Cancel
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        {loading && items.length === 0 ? (
-          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
-          </div>
-        ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            No items match “{search}”.
-          </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {items.map((it) => (
-              <li key={it.id}>
-                <button
-                  type="button"
-                  onClick={() => onPick(it)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-secondary"
-                >
-                  <div
-                    className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-lg",
-                      it.isGroupedItem
-                        ? "bg-accent/20 text-accent-foreground"
-                        : "bg-primary/10 text-primary",
-                    )}
-                  >
-                    {it.isGroupedItem ? (
-                      <Layers className="h-4 w-4" />
-                    ) : (
-                      <Package className="h-4 w-4" />
-                    )}
-                  </div>
+          {/* Mobile cards */}
+          <div className="space-y-2 sm:hidden">
+            {boms.map((bom) => (
+              <div
+                key={bom.id}
+                className="rounded-xl border border-border bg-background p-3"
+              >
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-foreground">
-                      {it.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {it.isGroupedItem
-                        ? `Group · ${it.childItems?.length ?? 0} items`
-                        : formatPrice(it.itemPrice)}
-                      {typeof it.availableStock === "number" && (
-                        <> · stock {it.availableStock}</>
-                      )}
-                    </div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {bom.projectName || "—"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Id: {bom.id} · Created by: {bom.createdByUser?.trim() || "—"}
+                    </p>
                   </div>
-                </button>
-              </li>
+                  <button
+                    type="button"
+                    onClick={() => onView(bom)}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-input bg-background text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20"
+                    aria-label={`View BOM ${bom.id}`}
+                  >
+                    <Eye className="h-4 w-4 text-primary" />
+                  </button>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function BomDetailView({
+  bom,
+  loading,
+  error,
+  onRetry,
+}: {
+  bom: BomListItem | null;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}) {
+  const items = bom?.items ?? [];
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground">BOM Items</h2>
+        {bom && (
+          <span className="text-xs text-muted-foreground">
+            {items.length} {items.length === 1 ? "item" : "items"}
+          </span>
         )}
       </div>
-    </div>
+
+      {loading && (
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-12 animate-pulse rounded-xl bg-muted" />
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <div className="flex-1">{error}</div>
+          <button onClick={() => void onRetry()} className="font-semibold underline">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && items.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+          <Package className="mx-auto h-10 w-10 text-muted-foreground/50" />
+          <p className="mt-3 text-sm font-medium text-foreground">
+            No items in this BOM
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && items.length > 0 && (
+        <>
+          {/* Desktop table */}
+          <div className="hidden overflow-hidden rounded-xl border border-border sm:block">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-muted/60 text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium">Item Name</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Qty</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {items.map((item) => (
+                  <BomDetailRow key={item.id} item={item} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="space-y-2 sm:hidden">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between rounded-xl border border-border bg-background p-3"
+              >
+                <span className="min-w-0 flex-1 pr-3 text-sm font-medium text-foreground">
+                  {item.itemName}
+                </span>
+                <span className="shrink-0 rounded-md bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent-foreground">
+                  Qty: {item.qty}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
-function GroupQtyEditor({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState(String(value));
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setVal(String(value));
-  }, [value]);
-
-  useEffect(() => {
-    if (editing) inputRef.current?.select();
-  }, [editing]);
-
-  const commit = () => {
-    const n = Number(val);
-    if (Number.isFinite(n) && n > 0) onChange(n);
-    else setVal(String(value));
-    setEditing(false);
-  };
-
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        type="number"
-        inputMode="numeric"
-        min={1}
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") {
-            setVal(String(value));
-            setEditing(false);
-          }
-        }}
-        className="h-7 w-14 rounded-md border border-input bg-background px-2 text-xs font-semibold"
-      />
-    );
-  }
+function BomDetailRow({ item }: { item: BomDetailItem }) {
   return (
-    <button
-      type="button"
-      onClick={() => {
-        setVal(String(value));
-        setEditing(true);
-      }}
-      aria-label="Edit group quantity"
-      className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm hover:border-primary/40 hover:bg-accent/10 active:bg-accent/20"
-    >
-      <span className="text-muted-foreground">Qty:</span>
-      <span>{value}</span>
-      <Pencil className="h-3 w-3 text-muted-foreground" />
-    </button>
+    <tr className="bg-card hover:bg-accent/5 transition-colors">
+      <td className="px-4 py-3 text-foreground">{item.itemName}</td>
+      <td className="px-4 py-3 text-right font-semibold text-foreground">
+        {item.qty}
+      </td>
+    </tr>
   );
 }
