@@ -7,6 +7,7 @@ import {
   Layers,
   LogOut,
   Package,
+  PackagePlus,
   Ruler,
   Undo2,
 
