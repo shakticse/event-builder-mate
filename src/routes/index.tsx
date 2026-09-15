@@ -135,6 +135,15 @@ function BomBuilderPage() {
               </p>
             </div>
             {view === "list" && (
+              <Link
+                to="/bom-create"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-accent-foreground shadow-sm"
+              >
+                <Plus className="h-4 w-4" />
+                Create BOM
+              </Link>
+            )}
+            {view === "list" && (
               <button
                 onClick={() => void fetchBoms()}
                 className="rounded-md p-2 text-primary-foreground/80 hover:bg-white/10 active:bg-white/20"
