@@ -42,7 +42,7 @@ function BomBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [view, setView] = useState<"list" | "detail">("list");
+  const [view, setView] = useState<"list" | "detail" | "create">("list");
   const [selectedBom, setSelectedBom] = useState<BomListItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -106,6 +106,10 @@ function BomBuilderPage() {
     setDetailError(null);
   };
 
+  if (view === "create") {
+    return <BomCreateView onBack={backToList} />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b border-border bg-primary text-primary-foreground shadow-sm">
@@ -136,13 +140,14 @@ function BomBuilderPage() {
               </p>
             </div>
             {view === "list" && (
-              <Link
-                to="/bom-create"
+              <button
+                type="button"
+                onClick={() => setView("create")}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-accent-foreground shadow-sm"
               >
                 <Plus className="h-4 w-4" />
                 Create BOM
-              </Link>
+              </button>
             )}
             {view === "list" && (
               <button
