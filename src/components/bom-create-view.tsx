@@ -68,7 +68,10 @@ export function BomCreateView({
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(API_URL);
+      const [res, pRes] = await Promise.all([
+        apiFetch(API_URL),
+        apiFetch("/api/project"),
+      ]);
       if (!res.ok) {
         throw new Error(
             `Failed to load items (${res.status})`,
@@ -76,6 +79,10 @@ export function BomCreateView({
       }
       const data = (await res.json()) as BomApiItem[];
       setItems(Array.isArray(data) ? data : []);
+      if (pRes.ok) {
+        const p = (await pRes.json()) as ProjectApi[];
+        setProjects(Array.isArray(p) ? p : []);
+      }
     } catch (e) {
       if (isSessionExpired(e)) {
         setError(SESSION_TIMED_OUT);
