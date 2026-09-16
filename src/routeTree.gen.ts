@@ -17,7 +17,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as GatePassRouteImport } from './routes/gate-pass'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChangeRequestRouteImport } from './routes/change-request'
-import { Route as BomCreateRouteImport } from './routes/bom-create'
 import { Route as IndexRouteImport } from './routes/index'
 
 const StockConsolidationRoute = StockConsolidationRouteImport.update({
@@ -60,11 +59,6 @@ const ChangeRequestRoute = ChangeRequestRouteImport.update({
   path: '/change-request',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BomCreateRoute = BomCreateRouteImport.update({
-  id: '/bom-create',
-  path: '/bom-create',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -73,7 +67,6 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/bom-create': typeof BomCreateRoute
   '/change-request': typeof ChangeRequestRoute
   '/dashboard': typeof DashboardRoute
   '/gate-pass': typeof GatePassRoute
@@ -85,7 +78,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/bom-create': typeof BomCreateRoute
   '/change-request': typeof ChangeRequestRoute
   '/dashboard': typeof DashboardRoute
   '/gate-pass': typeof GatePassRoute
@@ -98,7 +90,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/bom-create': typeof BomCreateRoute
   '/change-request': typeof ChangeRequestRoute
   '/dashboard': typeof DashboardRoute
   '/gate-pass': typeof GatePassRoute
@@ -112,7 +103,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/bom-create'
     | '/change-request'
     | '/dashboard'
     | '/gate-pass'
@@ -124,7 +114,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/bom-create'
     | '/change-request'
     | '/dashboard'
     | '/gate-pass'
@@ -136,7 +125,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/bom-create'
     | '/change-request'
     | '/dashboard'
     | '/gate-pass'
@@ -149,7 +137,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BomCreateRoute: typeof BomCreateRoute
   ChangeRequestRoute: typeof ChangeRequestRoute
   DashboardRoute: typeof DashboardRoute
   GatePassRoute: typeof GatePassRoute
@@ -218,13 +205,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChangeRequestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/bom-create': {
-      id: '/bom-create'
-      path: '/bom-create'
-      fullPath: '/bom-create'
-      preLoaderRoute: typeof BomCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -237,7 +217,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BomCreateRoute: BomCreateRoute,
   ChangeRequestRoute: ChangeRequestRoute,
   DashboardRoute: DashboardRoute,
   GatePassRoute: GatePassRoute,

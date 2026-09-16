@@ -1,5 +1,4 @@
 import { APP_NAME } from "@/lib/app-config";
-import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -14,6 +13,7 @@ import {
   AlertCircle,
   Loader2,
   Pencil,
+  ArrowLeft,
 } from "lucide-react";
 import {
   evalExpression,
@@ -25,25 +25,6 @@ import { cn } from "@/lib/utils";
 import { apiFetch, isSessionExpired, SESSION_TIMED_OUT } from "@/lib/api-client";
 
 
-export const Route = createFileRoute("/bom-create")({
-  head: () => ({
-    meta: [
-      { title: `BOM Builder — ${APP_NAME}` },
-      {
-        name: "description",
-        content:
-          "Build, edit and export a Bill of Materials for any event rental job in seconds.",
-      },
-      { property: "og:title", content: `BOM Builder — ${APP_NAME}` },
-      {
-        property: "og:description",
-        content:
-          "Build, edit and export a Bill of Materials for any event rental job in seconds.",
-      },
-    ],
-  }),
-  component: BomBuilderPage,
-});
 
 const API_URL = "/api/items/bomitems";
 
