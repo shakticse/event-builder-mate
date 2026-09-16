@@ -1,5 +1,5 @@
 import { APP_NAME } from "@/lib/app-config";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -9,11 +9,11 @@ import {
   Plus,
   RefreshCw,
   AlertCircle,
-  Loader2,
 } from "lucide-react";
 import { type BomListItem, type BomDetailItem } from "@/lib/bom-types";
 import { cn } from "@/lib/utils";
 import { apiFetch, isSessionExpired, SESSION_TIMED_OUT } from "@/lib/api-client";
+import { BomCreateView } from "@/components/bom-create-view";
 
 export const Route = createFileRoute("/")({
   head: () => ({
