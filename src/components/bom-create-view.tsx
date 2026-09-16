@@ -240,6 +240,93 @@ export function BomCreateView({
     }
   };
 
+  const handleSave = async () => {
+    if (!projectId) {
+      toast.error("Select a project first");
+      return;
+    }
+    if (rows.length === 0) {
+      toast.error("Add at least one item");
+      return;
+    }
+
+    // Build payload: each group emits a grouped parent row followed by its children.
+    type PayloadItem = {
+      itemId: number;
+      qty: number;
+      availableStock: number;
+      itemType: string;
+      parentId?: number;
+      expression?: string;
+      min_qty?: number;
+      perunit_qty?: number;
+    };
+    const payloadItems: PayloadItem[] = [];
+    const emittedGroups = new Set<string>();
+
+    for (const { rows: groupRows } of grouped) {
+      const first = groupRows[0];
+      if (first.groupInstanceId && first.groupItemId) {
+        if (!emittedGroups.has(first.groupInstanceId)) {
+          emittedGroups.add(first.groupInstanceId);
+          payloadItems.push({
+            itemId: first.groupItemId,
+            qty: first.groupQty ?? 1,
+            availableStock: 0,
+            itemType: "grouped",
+          });
+        }
+        for (const r of groupRows) {
+          payloadItems.push({
+            itemId: r.itemId,
+            qty: r.quantity,
+            availableStock: r.availableStock ?? 0,
+            itemType: "child",
+            parentId: first.groupItemId,
+            expression: r.expression ?? "(qty*perunit_qty)",
+            min_qty: 0,
+            perunit_qty: r.perunit ?? 1,
+          });
+        }
+      } else {
+        payloadItems.push({
+          itemId: first.itemId,
+          qty: first.quantity,
+          availableStock: first.availableStock ?? 0,
+          itemType: "non-grouped",
+        });
+      }
+    }
+
+    setSaving(true);
+    try {
+      const res = await apiFetch("/api/bom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: description.trim() || eventName.trim(),
+          projectId: projectId,
+          createdByEmail: user?.email ?? "",
+          items: payloadItems,
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Failed to create BOM (${res.status})`);
+      }
+      toast.success("BOM created");
+      setRows([]);
+      setDescription("");
+      onCreated?.();
+      onBack?.();
+    } catch (e) {
+      if (isSessionExpired(e)) return;
+      toast.error(e instanceof Error ? e.message : "Failed to create BOM");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Group rows together visually
   const grouped = useMemo(() => {
     const order: string[] = [];
