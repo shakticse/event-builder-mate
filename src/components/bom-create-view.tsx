@@ -23,6 +23,8 @@ import {
 import { exportBomToXlsx } from "@/lib/bom-export";
 import { cn } from "@/lib/utils";
 import { apiFetch, isSessionExpired, SESSION_TIMED_OUT } from "@/lib/api-client";
+import { type ProjectApi } from "@/lib/measurement-book";
+import { useAuth } from "@/lib/auth";
 
 
 
