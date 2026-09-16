@@ -60,6 +60,10 @@ export interface BomRow {
   price: number | null;
   /** if part of a group, the group instance id */
   groupInstanceId?: string;
+  /** the API item id of the parent grouped item */
+  groupItemId?: number;
+  /** available stock reported by the API */
+  availableStock?: number;
   /** parent group name, for UI label */
   groupName?: string;
   /** parent group's base quantity (the qty variable in expression) */
