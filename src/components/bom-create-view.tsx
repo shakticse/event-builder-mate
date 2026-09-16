@@ -37,7 +37,7 @@ function formatPrice(p: number | null) {
   return `₹${p.toLocaleString()}`;
 }
 
-function BomBuilderPage() {
+export function BomCreateView({ onBack }: { onBack?: () => void }) {
   const [items, setItems] = useState<BomApiItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -238,11 +238,22 @@ function BomBuilderPage() {
       <header className="sticky top-0 z-20 border-b border-border bg-primary text-primary-foreground shadow-sm">
         <div className="mx-auto max-w-2xl px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <Package className="h-5 w-5" />
-            </div>
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground"
+                aria-label="Back to BOM list"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                <Package className="h-5 w-5" />
+              </div>
+            )}
             <div className="flex-1">
-              <h1 className="text-base font-bold leading-tight">BOM Builder</h1>
+              <h1 className="text-base font-bold leading-tight">Create BOM</h1>
               <p className="text-xs text-primary-foreground/70 leading-tight">
                 {APP_NAME}
               </p>
