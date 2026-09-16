@@ -39,8 +39,19 @@ function formatPrice(p: number | null) {
   return `₹${p.toLocaleString()}`;
 }
 
-export function BomCreateView({ onBack }: { onBack?: () => void }) {
+export function BomCreateView({
+  onBack,
+  onCreated,
+}: {
+  onBack?: () => void;
+  onCreated?: () => void;
+}) {
+  const { user } = useAuth();
   const [items, setItems] = useState<BomApiItem[]>([]);
+  const [projects, setProjects] = useState<ProjectApi[]>([]);
+  const [projectId, setProjectId] = useState("");
+  const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
