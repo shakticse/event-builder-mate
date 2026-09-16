@@ -5,6 +5,7 @@ export interface ChildItem {
   expression: string;
   price: number | null;
   categoryName?: string;
+  availableStock?: number;
 }
 
 export interface BomApiItem {
