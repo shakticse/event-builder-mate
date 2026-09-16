@@ -23,6 +23,8 @@ import {
 import { exportBomToXlsx } from "@/lib/bom-export";
 import { cn } from "@/lib/utils";
 import { apiFetch, isSessionExpired, SESSION_TIMED_OUT } from "@/lib/api-client";
+import { type ProjectApi } from "@/lib/measurement-book";
+import { useAuth } from "@/lib/auth";
 
 
 
@@ -37,8 +39,19 @@ function formatPrice(p: number | null) {
   return `₹${p.toLocaleString()}`;
 }
 
-export function BomCreateView({ onBack }: { onBack?: () => void }) {
+export function BomCreateView({
+  onBack,
+  onCreated,
+}: {
+  onBack?: () => void;
+  onCreated?: () => void;
+}) {
+  const { user } = useAuth();
   const [items, setItems] = useState<BomApiItem[]>([]);
+  const [projects, setProjects] = useState<ProjectApi[]>([]);
+  const [projectId, setProjectId] = useState("");
+  const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +68,10 @@ export function BomCreateView({ onBack }: { onBack?: () => void }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(API_URL);
+      const [res, pRes] = await Promise.all([
+        apiFetch(API_URL),
+        apiFetch("/api/project"),
+      ]);
       if (!res.ok) {
         throw new Error(
             `Failed to load items (${res.status})`,
@@ -63,6 +79,10 @@ export function BomCreateView({ onBack }: { onBack?: () => void }) {
       }
       const data = (await res.json()) as BomApiItem[];
       setItems(Array.isArray(data) ? data : []);
+      if (pRes.ok) {
+        const p = (await pRes.json()) as ProjectApi[];
+        setProjects(Array.isArray(p) ? p : []);
+      }
     } catch (e) {
       if (isSessionExpired(e)) {
         setError(SESSION_TIMED_OUT);
@@ -115,6 +135,8 @@ export function BomCreateView({ onBack }: { onBack?: () => void }) {
             quantity: finalQty,
             price: c.price,
             groupInstanceId,
+            groupItemId: selected.id,
+            availableStock: c.availableStock ?? 0,
             groupName: selected.name,
             groupQty: qty,
             expression: c.expression,
@@ -148,6 +170,7 @@ export function BomCreateView({ onBack }: { onBack?: () => void }) {
               quantity: qty,
               price: selected.itemPrice,
               categoryName: selected.categoryName,
+              availableStock: selected.availableStock ?? 0,
               standalone: true,
             },
             ...prev,
@@ -214,6 +237,93 @@ export function BomCreateView({ onBack }: { onBack?: () => void }) {
       toast.success(`Exported ${file}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
+    }
+  };
+
+  const handleSave = async () => {
+    if (!projectId) {
+      toast.error("Select a project first");
+      return;
+    }
+    if (rows.length === 0) {
+      toast.error("Add at least one item");
+      return;
+    }
+
+    // Build payload: each group emits a grouped parent row followed by its children.
+    type PayloadItem = {
+      itemId: number;
+      qty: number;
+      availableStock: number;
+      itemType: string;
+      parentId?: number;
+      expression?: string;
+      min_qty?: number;
+      perunit_qty?: number;
+    };
+    const payloadItems: PayloadItem[] = [];
+    const emittedGroups = new Set<string>();
+
+    for (const { rows: groupRows } of grouped) {
+      const first = groupRows[0];
+      if (first.groupInstanceId && first.groupItemId) {
+        if (!emittedGroups.has(first.groupInstanceId)) {
+          emittedGroups.add(first.groupInstanceId);
+          payloadItems.push({
+            itemId: first.groupItemId,
+            qty: first.groupQty ?? 1,
+            availableStock: 0,
+            itemType: "grouped",
+          });
+        }
+        for (const r of groupRows) {
+          payloadItems.push({
+            itemId: r.itemId,
+            qty: r.quantity,
+            availableStock: r.availableStock ?? 0,
+            itemType: "child",
+            parentId: first.groupItemId,
+            expression: r.expression ?? "(qty*perunit_qty)",
+            min_qty: 0,
+            perunit_qty: r.perunit ?? 1,
+          });
+        }
+      } else {
+        payloadItems.push({
+          itemId: first.itemId,
+          qty: first.quantity,
+          availableStock: first.availableStock ?? 0,
+          itemType: "non-grouped",
+        });
+      }
+    }
+
+    setSaving(true);
+    try {
+      const res = await apiFetch("/api/bom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: description.trim() || eventName.trim(),
+          projectId: projectId,
+          createdByEmail: user?.email ?? "",
+          items: payloadItems,
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Failed to create BOM (${res.status})`);
+      }
+      toast.success("BOM created");
+      setRows([]);
+      setDescription("");
+      onCreated?.();
+      onBack?.();
+    } catch (e) {
+      if (isSessionExpired(e)) return;
+      toast.error(e instanceof Error ? e.message : "Failed to create BOM");
+    } finally {
+      setSaving(false);
     }
   };
 
