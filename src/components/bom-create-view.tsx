@@ -387,6 +387,35 @@ export function BomCreateView({
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-4 space-y-4">
+        {/* Project details */}
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
+            Project details
+          </h2>
+          <select
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            aria-label="Project"
+            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:border-primary/40 focus:outline-none"
+          >
+            <option value="">
+              {loading ? "Loading projects…" : "Select project"}
+            </option>
+            {projects.map((p) => (
+              <option key={p.id} value={String(p.id)}>
+                {p.projectName}
+              </option>
+            ))}
+          </select>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            placeholder="Description (e.g. World Cup Hosting Event)"
+            className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary/40 focus:outline-none"
+          />
+        </section>
+
         {/* Add-item card */}
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-foreground">
