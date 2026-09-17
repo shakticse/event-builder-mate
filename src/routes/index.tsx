@@ -224,12 +224,16 @@ function BomListView({
   error,
   onRetry,
   onView,
+  onEdit,
+  editLoadingId,
 }: {
   boms: BomListItem[];
   loading: boolean;
   error: string | null;
   onRetry: () => void;
   onView: (bom: BomListItem) => void;
+  onEdit: (bom: BomListItem) => void;
+  editLoadingId: number | null;
 }) {
   return (
     <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
