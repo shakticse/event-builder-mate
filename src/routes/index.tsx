@@ -202,6 +202,8 @@ function BomBuilderPage() {
             error={error}
             onRetry={fetchBoms}
             onView={openDetail}
+            onEdit={openEdit}
+            editLoadingId={editLoadingId}
           />
         ) : (
           <BomDetailView
