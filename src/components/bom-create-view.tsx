@@ -409,7 +409,11 @@ export function BomCreateView({
       onBack?.();
     } catch (e) {
       if (isSessionExpired(e)) return;
-      toast.error(e instanceof Error ? e.message : "Failed to create BOM");
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : `Failed to ${isEdit ? "update" : "create"} BOM`,
+      );
     } finally {
       setSaving(false);
     }
