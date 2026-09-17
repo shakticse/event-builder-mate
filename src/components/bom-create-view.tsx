@@ -622,7 +622,21 @@ export function BomCreateView({
             className="flex h-12 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-accent-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
           >
             <FileSpreadsheet className="h-5 w-5" />
-            Export Excel
+            Export
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={rows.length === 0 || !projectId || saving}
+            title={!projectId ? "Select a project first" : "Save BOM"}
+            className="flex h-12 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+          >
+            {saving ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Save className="h-5 w-5" />
+            )}
+            Save BOM
           </button>
         </div>
       </footer>
