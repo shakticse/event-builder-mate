@@ -107,7 +107,9 @@ function BomBuilderPage() {
   };
 
   if (view === "create") {
-    return <BomCreateView onBack={backToList} />;
+    return (
+      <BomCreateView onBack={backToList} onCreated={() => void fetchBoms()} />
+    );
   }
 
   return (

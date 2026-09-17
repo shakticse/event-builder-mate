@@ -14,6 +14,7 @@ import {
   Loader2,
   Pencil,
   ArrowLeft,
+  Save,
 } from "lucide-react";
 import {
   evalExpression,
@@ -387,6 +388,35 @@ export function BomCreateView({
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-4 space-y-4">
+        {/* Project details */}
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
+            Project details
+          </h2>
+          <select
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            aria-label="Project"
+            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:border-primary/40 focus:outline-none"
+          >
+            <option value="">
+              {loading ? "Loading projects…" : "Select project"}
+            </option>
+            {projects.map((p) => (
+              <option key={p.id} value={String(p.id)}>
+                {p.projectName}
+              </option>
+            ))}
+          </select>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            placeholder="Description (e.g. World Cup Hosting Event)"
+            className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary/40 focus:outline-none"
+          />
+        </section>
+
         {/* Add-item card */}
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-foreground">
@@ -593,7 +623,21 @@ export function BomCreateView({
             className="flex h-12 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-accent-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
           >
             <FileSpreadsheet className="h-5 w-5" />
-            Export Excel
+            Export
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={rows.length === 0 || !projectId || saving}
+            title={!projectId ? "Select a project first" : "Save BOM"}
+            className="flex h-12 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+          >
+            {saving ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Save className="h-5 w-5" />
+            )}
+            Save BOM
           </button>
         </div>
       </footer>
