@@ -19,6 +19,7 @@ import {
 import {
   evalExpression,
   type BomApiItem,
+  type BomListItem,
   type BomRow,
 } from "@/lib/bom-types";
 import { exportBomToXlsx } from "@/lib/bom-export";
@@ -43,10 +44,13 @@ function formatPrice(p: number | null) {
 export function BomCreateView({
   onBack,
   onCreated,
+  editBom,
 }: {
   onBack?: () => void;
   onCreated?: () => void;
+  editBom?: BomListItem | null;
 }) {
+  const isEdit = !!editBom;
   const { user } = useAuth();
   const [items, setItems] = useState<BomApiItem[]>([]);
   const [projects, setProjects] = useState<ProjectApi[]>([]);
