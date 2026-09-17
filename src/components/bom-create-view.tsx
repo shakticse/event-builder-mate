@@ -380,21 +380,29 @@ export function BomCreateView({
 
     setSaving(true);
     try {
-      const res = await apiFetch("/api/bom", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description: description.trim() || eventName.trim(),
-          projectId: projectId,
-          createdByEmail: user?.email ?? "",
-          items: payloadItems,
-        }),
-      });
+      const res = await apiFetch(
+        isEdit ? `/api/bom/${editBom!.id}` : "/api/bom",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...(isEdit ? { id: editBom!.id } : {}),
+            description: description.trim() || eventName.trim(),
+            projectId: projectId,
+            createdByEmail: user?.email ?? "",
+            ...(isEdit ? { updatedByEmail: user?.email ?? "" } : {}),
+            items: payloadItems,
+          }),
+        },
+      );
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        throw new Error(text || `Failed to create BOM (${res.status})`);
+        throw new Error(
+          text ||
+            `Failed to ${isEdit ? "update" : "create"} BOM (${res.status})`,
+        );
       }
-      toast.success("BOM created");
+      toast.success(isEdit ? "BOM updated" : "BOM created");
       setRows([]);
       setDescription("");
       onCreated?.();
