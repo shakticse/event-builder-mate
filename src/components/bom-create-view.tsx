@@ -730,7 +730,7 @@ export function BomCreateView({
             ) : (
               <Save className="h-5 w-5" />
             )}
-            Save BOM
+            {isEdit ? "Update BOM" : "Save BOM"}
           </button>
         </div>
       </footer>
