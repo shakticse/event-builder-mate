@@ -455,7 +455,9 @@ export function BomCreateView({
               </div>
             )}
             <div className="flex-1">
-              <h1 className="text-base font-bold leading-tight">Create BOM</h1>
+              <h1 className="text-base font-bold leading-tight">
+                {isEdit ? `Edit BOM #${editBom!.id}` : "Create BOM"}
+              </h1>
               <p className="text-xs text-primary-foreground/70 leading-tight">
                 {APP_NAME}
               </p>
