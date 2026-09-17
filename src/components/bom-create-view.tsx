@@ -105,6 +105,81 @@ export function BomCreateView({
     void fetchItems();
   }, []);
 
+  // Prefill the form when editing an existing BOM (once items/projects arrive).
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (!editBom || prefilled.current) return;
+    if (items.length === 0) return;
+    prefilled.current = true;
+
+    setDescription(editBom.description ?? "");
+    setEventName(editBom.projectName ?? "");
+
+    const detailItems = editBom.items ?? [];
+    const catalogById = new Map(items.map((i) => [i.id, i]));
+    const groupInstanceByItemId = new Map<number, string>();
+    const groupQtyByItemId = new Map<number, number>();
+    const next: BomRow[] = [];
+
+    for (const it of detailItems) {
+      if (it.itemType === "grouped") {
+        const gi = uid();
+        groupInstanceByItemId.set(it.itemId, gi);
+        groupQtyByItemId.set(it.itemId, it.qty);
+      }
+    }
+
+    for (const it of detailItems) {
+      if (it.itemType === "grouped") continue;
+      const parentId = it.parentId ?? null;
+      if (parentId && groupInstanceByItemId.has(parentId)) {
+        const parent = catalogById.get(parentId);
+        const child = parent?.childItems?.find((c) => c.id === it.itemId);
+        next.push({
+          rowId: uid(),
+          itemId: it.itemId,
+          name: it.itemName,
+          quantity: it.qty,
+          price: child?.price ?? null,
+          groupInstanceId: groupInstanceByItemId.get(parentId),
+          groupItemId: parentId,
+          availableStock: child?.availableStock ?? 0,
+          groupName: parent?.name ?? `Group ${parentId}`,
+          groupQty: groupQtyByItemId.get(parentId) ?? 1,
+          expression: child?.expression ?? "(qty*perunit_qty)",
+          perunit: child?.perunit ?? 1,
+          categoryName: child?.categoryName ?? parent?.categoryName,
+          standalone: false,
+        });
+      } else {
+        const cat = catalogById.get(it.itemId);
+        next.push({
+          rowId: uid(),
+          itemId: it.itemId,
+          name: it.itemName,
+          quantity: it.qty,
+          price: cat?.itemPrice ?? null,
+          categoryName: cat?.categoryName,
+          availableStock: cat?.availableStock ?? 0,
+          standalone: true,
+        });
+      }
+    }
+    setRows(next);
+  }, [editBom, items]);
+
+  // Match the BOM's project once the project list is available.
+  useEffect(() => {
+    if (!editBom || projects.length === 0 || projectId) return;
+    const match = projects.find(
+      (p) =>
+        String(p.id) === String(editBom.projectId) ||
+        p.projectName?.trim().toLowerCase() ===
+          editBom.projectName?.trim().toLowerCase(),
+    );
+    if (match) setProjectId(String(match.id));
+  }, [editBom, projects, projectId]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return items.slice(0, 50);
