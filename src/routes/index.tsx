@@ -42,8 +42,12 @@ function BomBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [view, setView] = useState<"list" | "detail" | "create">("list");
+  const [view, setView] = useState<"list" | "detail" | "create" | "edit">(
+    "list",
+  );
   const [selectedBom, setSelectedBom] = useState<BomListItem | null>(null);
+  const [editBom, setEditBom] = useState<BomListItem | null>(null);
+  const [editLoadingId, setEditLoadingId] = useState<number | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
@@ -100,15 +104,39 @@ function BomBuilderPage() {
     }
   };
 
+  const openEdit = async (bom: BomListItem) => {
+    setEditLoadingId(bom.id);
+    try {
+      const res = await apiFetch(`/api/bom/${bom.id}`);
+      if (!res.ok) {
+        throw new Error(`Failed to load BOM (${res.status})`);
+      }
+      const data = (await res.json()) as BomListItem;
+      setEditBom(data);
+      setView("edit");
+    } catch (e) {
+      if (isSessionExpired(e)) return;
+      toast.error(e instanceof Error ? e.message : "Failed to load BOM");
+    } finally {
+      setEditLoadingId(null);
+    }
+  };
+
   const backToList = () => {
     setView("list");
     setSelectedBom(null);
+    setEditBom(null);
     setDetailError(null);
   };
 
-  if (view === "create") {
+  if (view === "create" || view === "edit") {
     return (
-      <BomCreateView onBack={backToList} onCreated={() => void fetchBoms()} />
+      <BomCreateView
+        key={view === "edit" ? `edit-${editBom?.id}` : "create"}
+        editBom={view === "edit" ? editBom : null}
+        onBack={backToList}
+        onCreated={() => void fetchBoms()}
+      />
     );
   }
 
