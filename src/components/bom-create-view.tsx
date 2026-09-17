@@ -19,6 +19,7 @@ import {
 import {
   evalExpression,
   type BomApiItem,
+  type BomListItem,
   type BomRow,
 } from "@/lib/bom-types";
 import { exportBomToXlsx } from "@/lib/bom-export";
@@ -43,10 +44,13 @@ function formatPrice(p: number | null) {
 export function BomCreateView({
   onBack,
   onCreated,
+  editBom,
 }: {
   onBack?: () => void;
   onCreated?: () => void;
+  editBom?: BomListItem | null;
 }) {
+  const isEdit = !!editBom;
   const { user } = useAuth();
   const [items, setItems] = useState<BomApiItem[]>([]);
   const [projects, setProjects] = useState<ProjectApi[]>([]);
@@ -100,6 +104,81 @@ export function BomCreateView({
   useEffect(() => {
     void fetchItems();
   }, []);
+
+  // Prefill the form when editing an existing BOM (once items/projects arrive).
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (!editBom || prefilled.current) return;
+    if (items.length === 0) return;
+    prefilled.current = true;
+
+    setDescription(editBom.description ?? "");
+    setEventName(editBom.projectName ?? "");
+
+    const detailItems = editBom.items ?? [];
+    const catalogById = new Map(items.map((i) => [i.id, i]));
+    const groupInstanceByItemId = new Map<number, string>();
+    const groupQtyByItemId = new Map<number, number>();
+    const next: BomRow[] = [];
+
+    for (const it of detailItems) {
+      if (it.itemType === "grouped") {
+        const gi = uid();
+        groupInstanceByItemId.set(it.itemId, gi);
+        groupQtyByItemId.set(it.itemId, it.qty);
+      }
+    }
+
+    for (const it of detailItems) {
+      if (it.itemType === "grouped") continue;
+      const parentId = it.parentId ?? null;
+      if (parentId && groupInstanceByItemId.has(parentId)) {
+        const parent = catalogById.get(parentId);
+        const child = parent?.childItems?.find((c) => c.id === it.itemId);
+        next.push({
+          rowId: uid(),
+          itemId: it.itemId,
+          name: it.itemName,
+          quantity: it.qty,
+          price: child?.price ?? null,
+          groupInstanceId: groupInstanceByItemId.get(parentId),
+          groupItemId: parentId,
+          availableStock: child?.availableStock ?? 0,
+          groupName: parent?.name ?? `Group ${parentId}`,
+          groupQty: groupQtyByItemId.get(parentId) ?? 1,
+          expression: child?.expression ?? "(qty*perunit_qty)",
+          perunit: child?.perunit ?? 1,
+          categoryName: child?.categoryName ?? parent?.categoryName,
+          standalone: false,
+        });
+      } else {
+        const cat = catalogById.get(it.itemId);
+        next.push({
+          rowId: uid(),
+          itemId: it.itemId,
+          name: it.itemName,
+          quantity: it.qty,
+          price: cat?.itemPrice ?? null,
+          categoryName: cat?.categoryName,
+          availableStock: cat?.availableStock ?? 0,
+          standalone: true,
+        });
+      }
+    }
+    setRows(next);
+  }, [editBom, items]);
+
+  // Match the BOM's project once the project list is available.
+  useEffect(() => {
+    if (!editBom || projects.length === 0 || projectId) return;
+    const match = projects.find(
+      (p) =>
+        String(p.id) === String(editBom.projectId) ||
+        p.projectName?.trim().toLowerCase() ===
+          editBom.projectName?.trim().toLowerCase(),
+    );
+    if (match) setProjectId(String(match.id));
+  }, [editBom, projects, projectId]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -301,28 +380,40 @@ export function BomCreateView({
 
     setSaving(true);
     try {
-      const res = await apiFetch("/api/bom", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description: description.trim() || eventName.trim(),
-          projectId: projectId,
-          createdByEmail: user?.email ?? "",
-          items: payloadItems,
-        }),
-      });
+      const res = await apiFetch(
+        isEdit ? `/api/bom/${editBom!.id}` : "/api/bom",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...(isEdit ? { id: editBom!.id } : {}),
+            description: description.trim() || eventName.trim(),
+            projectId: projectId,
+            createdByEmail: user?.email ?? "",
+            ...(isEdit ? { updatedByEmail: user?.email ?? "" } : {}),
+            items: payloadItems,
+          }),
+        },
+      );
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        throw new Error(text || `Failed to create BOM (${res.status})`);
+        throw new Error(
+          text ||
+            `Failed to ${isEdit ? "update" : "create"} BOM (${res.status})`,
+        );
       }
-      toast.success("BOM created");
+      toast.success(isEdit ? "BOM updated" : "BOM created");
       setRows([]);
       setDescription("");
       onCreated?.();
       onBack?.();
     } catch (e) {
       if (isSessionExpired(e)) return;
-      toast.error(e instanceof Error ? e.message : "Failed to create BOM");
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : `Failed to ${isEdit ? "update" : "create"} BOM`,
+      );
     } finally {
       setSaving(false);
     }
@@ -364,7 +455,9 @@ export function BomCreateView({
               </div>
             )}
             <div className="flex-1">
-              <h1 className="text-base font-bold leading-tight">Create BOM</h1>
+              <h1 className="text-base font-bold leading-tight">
+                {isEdit ? `Edit BOM #${editBom!.id}` : "Create BOM"}
+              </h1>
               <p className="text-xs text-primary-foreground/70 leading-tight">
                 {APP_NAME}
               </p>
@@ -637,7 +730,7 @@ export function BomCreateView({
             ) : (
               <Save className="h-5 w-5" />
             )}
-            Save BOM
+            {isEdit ? "Update BOM" : "Save BOM"}
           </button>
         </div>
       </footer>

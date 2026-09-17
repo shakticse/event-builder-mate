@@ -42,8 +42,12 @@ function BomBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [view, setView] = useState<"list" | "detail" | "create">("list");
+  const [view, setView] = useState<"list" | "detail" | "create" | "edit">(
+    "list",
+  );
   const [selectedBom, setSelectedBom] = useState<BomListItem | null>(null);
+  const [editBom, setEditBom] = useState<BomListItem | null>(null);
+  const [editLoadingId, setEditLoadingId] = useState<number | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
@@ -100,15 +104,39 @@ function BomBuilderPage() {
     }
   };
 
+  const openEdit = async (bom: BomListItem) => {
+    setEditLoadingId(bom.id);
+    try {
+      const res = await apiFetch(`/api/bom/${bom.id}`);
+      if (!res.ok) {
+        throw new Error(`Failed to load BOM (${res.status})`);
+      }
+      const data = (await res.json()) as BomListItem;
+      setEditBom(data);
+      setView("edit");
+    } catch (e) {
+      if (isSessionExpired(e)) return;
+      toast.error(e instanceof Error ? e.message : "Failed to load BOM");
+    } finally {
+      setEditLoadingId(null);
+    }
+  };
+
   const backToList = () => {
     setView("list");
     setSelectedBom(null);
+    setEditBom(null);
     setDetailError(null);
   };
 
-  if (view === "create") {
+  if (view === "create" || view === "edit") {
     return (
-      <BomCreateView onBack={backToList} onCreated={() => void fetchBoms()} />
+      <BomCreateView
+        key={view === "edit" ? `edit-${editBom?.id}` : "create"}
+        editBom={view === "edit" ? editBom : null}
+        onBack={backToList}
+        onCreated={() => void fetchBoms()}
+      />
     );
   }
 
@@ -174,6 +202,8 @@ function BomBuilderPage() {
             error={error}
             onRetry={fetchBoms}
             onView={openDetail}
+            onEdit={openEdit}
+            editLoadingId={editLoadingId}
           />
         ) : (
           <BomDetailView
@@ -194,12 +224,16 @@ function BomListView({
   error,
   onRetry,
   onView,
+  onEdit,
+  editLoadingId,
 }: {
   boms: BomListItem[];
   loading: boolean;
   error: string | null;
   onRetry: () => void;
   onView: (bom: BomListItem) => void;
+  onEdit: (bom: BomListItem) => void;
+  editLoadingId: number | null;
 }) {
   return (
     <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -269,15 +303,31 @@ function BomListView({
                       {bom.createdByUser?.trim() || "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onView(bom)}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20"
-                        aria-label={`View BOM ${bom.id}`}
-                      >
-                        <Eye className="h-3.5 w-3.5 text-primary" />
-                        View
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onView(bom)}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20"
+                          aria-label={`View BOM ${bom.id}`}
+                        >
+                          <Eye className="h-3.5 w-3.5 text-primary" />
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onEdit(bom)}
+                          disabled={editLoadingId === bom.id}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20 disabled:opacity-60"
+                          aria-label={`Edit BOM ${bom.id}`}
+                        >
+                          {editLoadingId === bom.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          ) : (
+                            <Pencil className="h-3.5 w-3.5 text-primary" />
+                          )}
+                          Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
