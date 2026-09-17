@@ -303,15 +303,31 @@ function BomListView({
                       {bom.createdByUser?.trim() || "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onView(bom)}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20"
-                        aria-label={`View BOM ${bom.id}`}
-                      >
-                        <Eye className="h-3.5 w-3.5 text-primary" />
-                        View
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onView(bom)}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20"
+                          aria-label={`View BOM ${bom.id}`}
+                        >
+                          <Eye className="h-3.5 w-3.5 text-primary" />
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onEdit(bom)}
+                          disabled={editLoadingId === bom.id}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20 disabled:opacity-60"
+                          aria-label={`Edit BOM ${bom.id}`}
+                        >
+                          {editLoadingId === bom.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          ) : (
+                            <Pencil className="h-3.5 w-3.5 text-primary" />
+                          )}
+                          Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
