@@ -353,14 +353,29 @@ function BomListView({
                       Id: {bom.id} · Created by: {bom.createdByUser?.trim() || "—"}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => onView(bom)}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-input bg-background text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20"
-                    aria-label={`View BOM ${bom.id}`}
-                  >
-                    <Eye className="h-4 w-4 text-primary" />
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onView(bom)}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-input bg-background text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20"
+                      aria-label={`View BOM ${bom.id}`}
+                    >
+                      <Eye className="h-4 w-4 text-primary" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(bom)}
+                      disabled={editLoadingId === bom.id}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-input bg-background text-foreground shadow-sm hover:bg-accent/10 active:bg-accent/20 disabled:opacity-60"
+                      aria-label={`Edit BOM ${bom.id}`}
+                    >
+                      {editLoadingId === bom.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      ) : (
+                        <Pencil className="h-4 w-4 text-primary" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
