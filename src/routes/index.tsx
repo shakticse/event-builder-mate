@@ -9,6 +9,8 @@ import {
   Plus,
   RefreshCw,
   AlertCircle,
+  Pencil,
+  Loader2,
 } from "lucide-react";
 import { type BomListItem, type BomDetailItem } from "@/lib/bom-types";
 import { cn } from "@/lib/utils";
