@@ -87,12 +87,14 @@ function BomBuilderPage() {
     setDetailLoading(true);
     setDetailError(null);
     try {
-      const res = await apiFetch(`/api/bom/${bom.id}`);
+      const res = await apiFetch(
+        `/api/bom/GetConsolidatedBomItemsById/${bom.id}`,
+      );
       if (!res.ok) {
         throw new Error(`Failed to load BOM details (${res.status})`);
       }
-      const data = (await res.json()) as BomListItem;
-      setSelectedBom(data);
+      const items = (await res.json()) as BomDetailItem[];
+      setSelectedBom({ ...bom, items });
     } catch (e) {
       if (isSessionExpired(e)) {
         setDetailError(SESSION_TIMED_OUT);
