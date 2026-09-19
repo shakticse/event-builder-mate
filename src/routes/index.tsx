@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Pencil,
   Loader2,
+  Search,
 } from "lucide-react";
 import { type BomListItem, type BomDetailItem } from "@/lib/bom-types";
 import { cn } from "@/lib/utils";
