@@ -27,6 +27,7 @@ import {
 } from "@/lib/gate-pass-export";
 import { cn } from "@/lib/utils";
 import { apiFetch, isSessionExpired, SESSION_TIMED_OUT } from "@/lib/api-client";
+import { type ProjectApi } from "@/lib/measurement-book";
 
 export const Route = createFileRoute("/gate-pass")({
   head: () => ({
@@ -70,6 +71,8 @@ const VEHICLE_TYPES = [
 
 function GatePassPage() {
   const [items, setItems] = useState<BomApiItem[]>([]);
+  const [projects, setProjects] = useState<ProjectApi[]>([]);
+  const [projectId, setProjectId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,7 +110,10 @@ function GatePassPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(API_URL);
+      const [res, projectRes] = await Promise.all([
+        apiFetch(API_URL),
+        apiFetch("/api/project"),
+      ]);
       if (!res.ok) {
         throw new Error(
             `Failed to load items (${res.status})`,
@@ -115,6 +121,10 @@ function GatePassPage() {
       }
       const data = (await res.json()) as BomApiItem[];
       setItems(Array.isArray(data) ? data : []);
+      if (projectRes.ok) {
+        const projectData = (await projectRes.json()) as ProjectApi[];
+        setProjects(Array.isArray(projectData) ? projectData : []);
+      }
     } catch (e) {
       if (isSessionExpired(e)) {
         setError(SESSION_TIMED_OUT);
@@ -241,8 +251,8 @@ function GatePassPage() {
 
   const handleExport = async () => {
     if (rows.length === 0) return;
-    if (!meta.projectName.trim()) {
-      toast.error("Please enter a project name");
+    if (!projectId) {
+      toast.error("Please select a project");
       return;
     }
     if (!meta.vehicleType) {
@@ -332,13 +342,34 @@ function GatePassPage() {
                 <option value="Return">Return</option>
               </select>
             </div>
-            <Field
-              label="Project name"
-              value={meta.projectName}
-              onChange={(v) => setField("projectName", v)}
-              placeholder="e.g. G20 Summit"
-              required
-            />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">
+                Project
+                <span className="ml-0.5 text-destructive">*</span>
+              </label>
+              <select
+                value={projectId}
+                onChange={(e) => {
+                  const nextProjectId = e.target.value;
+                  const project = projects.find(
+                    (candidate) => String(candidate.id) === nextProjectId,
+                  );
+                  setProjectId(nextProjectId);
+                  setField("projectName", project?.projectName ?? "");
+                }}
+                aria-label="Project"
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="">
+                  {loading ? "Loading projects…" : "Select project"}
+                </option>
+                {projects.map((project) => (
+                  <option key={project.id} value={String(project.id)}>
+                    {project.projectName}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Field
               label="Project location"
               value={meta.projectLocation}
