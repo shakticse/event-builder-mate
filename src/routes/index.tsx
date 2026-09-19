@@ -93,7 +93,8 @@ function BomBuilderPage() {
       if (!res.ok) {
         throw new Error(`Failed to load BOM details (${res.status})`);
       }
-      const items = (await res.json()) as BomDetailItem[];
+      const data = (await res.json()) as { items?: BomDetailItem[] } | BomDetailItem[];
+      const items = Array.isArray(data) ? data : data.items ?? [];
       setSelectedBom({ ...bom, items });
     } catch (e) {
       if (isSessionExpired(e)) {
