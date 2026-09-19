@@ -44,6 +44,7 @@ export interface BomDetailItem {
   itemName: string;
   unit: string | null;
   qty: number;
+  totalQuantity?: number;
   allottedQty: number | null;
   purchasedQty: number | null;
   fabricationQty: number | null;

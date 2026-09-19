@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Pencil,
   Loader2,
+  Search,
 } from "lucide-react";
 import { type BomListItem, type BomDetailItem } from "@/lib/bom-types";
 import { cn } from "@/lib/utils";
@@ -86,12 +87,15 @@ function BomBuilderPage() {
     setDetailLoading(true);
     setDetailError(null);
     try {
-      const res = await apiFetch(`/api/bom/${bom.id}`);
+      const res = await apiFetch(
+        `/api/bom/GetConsolidatedBomItemsById/${bom.id}`,
+      );
       if (!res.ok) {
         throw new Error(`Failed to load BOM details (${res.status})`);
       }
-      const data = (await res.json()) as BomListItem;
-      setSelectedBom(data);
+      const data = (await res.json()) as { items?: BomDetailItem[] } | BomDetailItem[];
+      const items = Array.isArray(data) ? data : data.items ?? [];
+      setSelectedBom({ ...bom, items });
     } catch (e) {
       if (isSessionExpired(e)) {
         setDetailError(SESSION_TIMED_OUT);
@@ -397,17 +401,36 @@ function BomDetailView({
   error: string | null;
   onRetry: () => void;
 }) {
-  const items = bom?.items ?? [];
+  const [query, setQuery] = useState("");
+  const allItems = bom?.items ?? [];
+  const items = query.trim()
+    ? allItems.filter((item) =>
+        item.itemName.toLowerCase().includes(query.trim().toLowerCase()),
+      )
+    : allItems;
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-sm font-semibold text-foreground">BOM Items</h2>
-        {bom && (
-          <span className="text-xs text-muted-foreground">
-            {items.length} {items.length === 1 ? "item" : "items"}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:w-56">
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search items..."
+              className="h-9 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Search BOM items"
+            />
+          </div>
+          {bom && (
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {items.length} / {allItems.length}
+            </span>
+          )}
+        </div>
       </div>
 
       {loading && (
@@ -432,7 +455,7 @@ function BomDetailView({
         <div className="rounded-2xl border border-dashed border-border p-8 text-center">
           <Package className="mx-auto h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm font-medium text-foreground">
-            No items in this BOM
+            {query.trim() ? "No matching items" : "No items in this BOM"}
           </p>
         </div>
       )}
@@ -467,7 +490,7 @@ function BomDetailView({
                   {item.itemName}
                 </span>
                 <span className="shrink-0 rounded-md bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent-foreground">
-                  Qty: {item.qty}
+                  Qty: {item.totalQuantity ?? item.qty}
                 </span>
               </div>
             ))}
@@ -483,7 +506,7 @@ function BomDetailRow({ item }: { item: BomDetailItem }) {
     <tr className="bg-card hover:bg-accent/5 transition-colors">
       <td className="px-4 py-3 text-foreground">{item.itemName}</td>
       <td className="px-4 py-3 text-right font-semibold text-foreground">
-        {item.qty}
+        {item.totalQuantity ?? item.qty}
       </td>
     </tr>
   );
